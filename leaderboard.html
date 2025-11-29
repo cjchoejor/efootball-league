@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard - eFootball League</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-futbol"></i>
+                eFootball League
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="tournament.html" class="nav-link">Tournaments</a>
+                <a href="past-tournaments.html" class="nav-link">Past Tournaments</a>
+                <a href="leaderboard.html" class="nav-link active">Leaderboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2 class="section-title">All-Time Leaderboard</h2>
+        
+        <div class="stats-overview" id="statsOverview">
+            <!-- Stats overview will be loaded here -->
+        </div>
+
+        <div class="leaderboard-container">
+            <div class="leaderboard-table">
+                <div class="table-header">
+                    <div class="table-row">
+                        <div>Rank</div>
+                        <div>Player</div>
+                        <div>Team</div>
+                        <div>Tournaments</div>
+                        <div>Wins</div>
+                        <div>Matches</div>
+                        <div>Goals</div>
+                        <div>Win %</div>
+                        <div>Points</div>
+                    </div>
+                </div>
+                <div class="table-body" id="leaderboardBody">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading leaderboard...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="src/js/utils.js"></script>
+    <script>
+        class Leaderboard {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                await this.loadLeaderboard();
+            }
+
+            async loadLeaderboard() {
+                try {
+                    const response = await fetch('/.netlify/functions/get-stats?type=all-time');
+                    const stats = await response.json();
+                    this.renderLeaderboard(stats);
+                } catch (error) {
+                    console.error('Error loading leaderboard:', error);
+                    document.getElementById('leaderboardBody').innerHTML = 
+                        '<p class="error">Error loading leaderboard</p>';
+                }
+            }
+
+            renderLeaderboard(stats) {
+                const container = document.getElementById('leaderboardBody');
+                
+                if (stats.length === 0) {
+                    container.innerHTML = '<p class="no-data">No leaderboard data available</p>';
+                    return;
+                }
+
+                container.innerHTML = stats.map((player, index) => `
+                    <div class="table-row ${index < 3 ? 'top-three' : ''}">
+                        <div class="rank">${index + 1}</div>
+                        <div class="player-info">
+                            <img src="${player.photo_url || 'src/images/default-avatar.jpg'}" 
+                                 alt="${player.name}" class="player-avatar">
+                            <span>${player.name}</span>
+                        </div>
+                        <div>${player.team_name}</div>
+                        <div>${player.tournaments_played || 0}</div>
+                        <div>${player.tournaments_won || 0}</div>
+                        <div>${player.total_matches || 0}</div>
+                        <div>${player.total_goals || 0}</div>
+                        <div>${player.win_percentage ? player.win_percentage.toFixed(1) + '%' : '0%'}</div>
+                        <div class="points">${player.total_points || 0}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new Leaderboard();
+        });
+    </script>
+</body>
+</html>

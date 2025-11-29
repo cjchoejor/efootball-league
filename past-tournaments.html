@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Past Tournaments - eFootball League</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-futbol"></i>
+                eFootball League
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="tournament.html" class="nav-link">Tournaments</a>
+                <a href="past-tournaments.html" class="nav-link active">Past Tournaments</a>
+                <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2 class="section-title">Past Tournaments</h2>
+        <div class="tournaments-grid" id="pastTournamentsGrid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading tournaments...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="src/js/utils.js"></script>
+    <script>
+        class PastTournaments {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                await this.loadPastTournaments();
+            }
+
+            async loadPastTournaments() {
+                try {
+                    const response = await fetch('/.netlify/functions/get-tournaments?status=completed');
+                    const tournaments = await response.json();
+                    this.renderTournaments(tournaments);
+                } catch (error) {
+                    console.error('Error loading past tournaments:', error);
+                    document.getElementById('pastTournamentsGrid').innerHTML = 
+                        '<p class="error">Error loading tournaments</p>';
+                }
+            }
+
+            renderTournaments(tournaments) {
+                const container = document.getElementById('pastTournamentsGrid');
+                
+                if (tournaments.length === 0) {
+                    container.innerHTML = '<p class="no-data">No past tournaments found</p>';
+                    return;
+                }
+
+                container.innerHTML = tournaments.map(tournament => `
+                    <div class="tournament-card" onclick="viewTournament('${tournament.id}')">
+                        <h3>${tournament.name}</h3>
+                        <div class="tournament-meta">
+                            <span><i class="fas fa-users"></i> ${tournament.player_count} players</span>
+                            <span><i class="fas fa-calendar"></i> ${new Date(tournament.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div class="tournament-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${(tournament.completed_matches / tournament.total_matches) * 100}%"></div>
+                            </div>
+                            <span>${tournament.completed_matches}/${tournament.total_matches} matches</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function viewTournament(tournamentId) {
+            window.location.href = `tournament.html?id=${tournamentId}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new PastTournaments();
+        });
+    </script>
+</body>
+</html>

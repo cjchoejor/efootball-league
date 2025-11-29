@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament - eFootball League</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-futbol"></i>
+                eFootball League
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="tournament.html" class="nav-link active">Tournaments</a>
+                <a href="past-tournaments.html" class="nav-link">Past Tournaments</a>
+                <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div id="tournamentCreate" class="tournament-section">
+            <h2 class="section-title">Create New Tournament</h2>
+            <div class="create-tournament-form">
+                <div class="form-group">
+                    <label class="form-label">Tournament Name</label>
+                    <input type="text" id="tournamentName" class="form-input" readonly>
+                </div>
+                
+                <div class="players-section">
+                    <h3>Players</h3>
+                    <div id="playersContainer">
+                        <!-- Player forms will be added here -->
+                    </div>
+                    <button type="button" class="btn-secondary" id="addPlayerBtn">
+                        <i class="fas fa-plus"></i> Add Player
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Matches per Player</label>
+                    <select id="matchesPerPlayer" class="form-input">
+                        <option value="">Select based on player count</option>
+                    </select>
+                </div>
+                
+                <button type="button" class="btn-primary" id="createTournamentFinalBtn">
+                    Create Tournament
+                </button>
+            </div>
+        </div>
+
+        <div id="tournamentView" class="tournament-section" style="display: none;">
+            <h2 class="section-title" id="tournamentTitle"></h2>
+            
+            <div class="tournament-actions">
+                <button class="btn-primary" id="addMatchBtn">
+                    <i class="fas fa-plus"></i> Add Match Result
+                </button>
+            </div>
+            
+            <div class="leaderboard-section">
+                <h3>Leaderboard</h3>
+                <div id="tournamentLeaderboard"></div>
+            </div>
+            
+            <div class="matches-section">
+                <h3>Recent Matches</h3>
+                <div id="recentMatches"></div>
+            </div>
+        </div>
+
+        <!-- Add Match Modal -->
+        <div id="addMatchModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Add Match Result</h3>
+                <form id="matchForm">
+                    <div class="form-group">
+                        <label class="form-label">Player A</label>
+                        <select id="playerASelect" class="form-input" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Player B</label>
+                        <select id="playerBSelect" class="form-input" required></select>
+                    </div>
+                    <div class="score-inputs">
+                        <div class="form-group">
+                            <label class="form-label">Goals (Player A)</label>
+                            <input type="number" id="goalsA" class="form-input" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Goals (Player B)</label>
+                            <input type="number" id="goalsB" class="form-input" min="0" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary">Submit Result</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="src/js/tournament.js"></script>
+</body>
+</html>
