@@ -34,9 +34,7 @@
             <div class="leaderboard-table">
                 <div class="table-header">
                     <div class="table-row">
-                        <div>Rank</div>
                         <div>Player</div>
-                        <div>Team</div>
                         <div>Tournaments</div>
                         <div>Wins</div>
                         <div>Matches</div>
@@ -87,8 +85,7 @@
                 }
 
                 container.innerHTML = stats.map((player, index) => `
-                    <div class="table-row ${index < 3 ? 'top-three' : ''}" data-label="Rank | Player | Team | Tournaments | Wins | Matches | Goals | Win % | Points">
-                        <div class="rank" data-label="Rank">${index + 1}</div>
+                    <div class="table-row ${index < 3 ? 'top-three' : ''}" data-label="Player | Tournaments | Wins | Matches | Goals | Win % | Points">
                         <div class="player-info" data-label="Player">
                             <img src="${player.photo_url || 'src/images/default-avatar.jpg'}" 
                                  alt="${player.name}" class="player-avatar">

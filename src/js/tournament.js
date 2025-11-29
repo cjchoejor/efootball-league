@@ -75,6 +75,13 @@ class TournamentManager {
       });
     }
 
+    const endLeagueBtn = document.getElementById("endLeagueBtn");
+    if (endLeagueBtn) {
+      endLeagueBtn.addEventListener("click", () => {
+        this.endLeague();
+      });
+    }
+
     // Mobile hamburger menu
     const navToggle = document.querySelector(".nav-toggle");
     const navMenu = document.querySelector(".nav-menu");
@@ -357,14 +364,13 @@ class TournamentManager {
                 <div class="table-header">
                     <div class="table-row">
                         <div>Player</div>
-                        <div>Team</div>
                         <div>P</div>
                         <div>W</div>
                         <div>D</div>
                         <div>L</div>
                         <div>GF</div>
                         <div>GA</div>
-                        <div>Pts</div>
+                        <div>Points</div>
                     </div>
                 </div>
                 <div class="table-body">
@@ -676,6 +682,51 @@ class TournamentManager {
       console.log("Successfully populated select elements with filtering");
     } catch (error) {
       console.error("Error in setupMatchModal:", error);
+    }
+  }
+
+  async endLeague() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentId = urlParams.get("id");
+
+    if (!tournamentId) {
+      Utils.showNotification("Tournament ID not found", "error");
+      return;
+    }
+
+    // Confirm ending league
+    const confirmed = confirm(
+      "Are you sure you want to end this league? This will mark all matches as ENDED and the tournament as finished."
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/end-league`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tournamentId }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        Utils.showNotification("League ended successfully!", "success");
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 1500);
+      } else {
+        Utils.showNotification(
+          "Error: " + (result.error || "Failed to end league"),
+          "error"
+        );
+      }
+    } catch (error) {
+      Utils.showNotification(
+        "Error ending league: " + error.message,
+        "error"
+      );
     }
   }
 

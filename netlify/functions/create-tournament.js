@@ -9,16 +9,23 @@ exports.handler = async (event) => {
         const sql = neon();
         const { players, matchesPerPlayer } = JSON.parse(event.body);
         
-        // Get tournament count for naming (count all tournaments regardless of status)
-        // This gives us sequential naming: WEEK 01, WEEK 02, WEEK 03, etc.
-        const countResult = await sql('SELECT COUNT(*) as count FROM tournaments');
-        const tournamentNumber = countResult && countResult[0] && countResult[0].count !== undefined 
-            ? countResult[0].count + 1 
-            : 1;
+        // Get the maximum week number from existing tournaments
+        // This ensures sequential naming: WEEK 01, WEEK 02, WEEK 03, etc.
+        const maxWeekResult = await sql(`
+            SELECT MAX(CAST(REPLACE(name, 'WEEK ', '') AS INTEGER)) as max_week 
+            FROM tournaments 
+            WHERE name LIKE 'WEEK%'
+        `);
+        
+        let tournamentNumber = 1;
+        if (maxWeekResult && maxWeekResult[0] && maxWeekResult[0].max_week) {
+            tournamentNumber = maxWeekResult[0].max_week + 1;
+        }
+        
         const tournamentName = `WEEK ${String(tournamentNumber).padStart(2, '0')}`;
         const tournamentId = `tournament_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        console.log('Tournament count:', countResult[0].count, 'New tournament number:', tournamentNumber, 'Name:', tournamentName, 'ID:', tournamentId);
+        console.log('New tournament number:', tournamentNumber, 'Name:', tournamentName, 'ID:', tournamentId);
         
         // Create tournament
         await sql(
@@ -77,15 +84,15 @@ async function generateFixtures(sql, tournamentId, players, matchesPerPlayer) {
                 // Match: Player i vs Player j
                 const matchId1 = `match_${tournamentId}_${i}_${j}_${k}`;
                 await sql(
-                    'INSERT INTO matches (id, tournament_id, player_a_id, player_b_id, status) VALUES ($1, $2, $3, $4, $5)',
-                    [matchId1, tournamentId, players[i].id, players[j].id, 'scheduled']
+                    'INSERT INTO matches (id, tournament_id, player_a_id, player_b_id, status, league_status) VALUES ($1, $2, $3, $4, $5, $6)',
+                    [matchId1, tournamentId, players[i].id, players[j].id, 'scheduled', 'ongoing']
                 );
                 
                 // Reverse match: Player j vs Player i
                 const matchId2 = `match_${tournamentId}_${j}_${i}_${k}`;
                 await sql(
-                    'INSERT INTO matches (id, tournament_id, player_a_id, player_b_id, status) VALUES ($1, $2, $3, $4, $5)',
-                    [matchId2, tournamentId, players[j].id, players[i].id, 'scheduled']
+                    'INSERT INTO matches (id, tournament_id, player_a_id, player_b_id, status, league_status) VALUES ($1, $2, $3, $4, $5, $6)',
+                    [matchId2, tournamentId, players[j].id, players[i].id, 'scheduled', 'ongoing']
                 );
             }
         }

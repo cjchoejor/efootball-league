@@ -104,19 +104,17 @@ class FootballLeague {
         const tableHtml = `
             <div class="table-header">
                 <div class="table-row">
-                    <div>Rank</div>
                     <div>Player</div>
-                    <div>Team</div>
                     <div>Matches</div>
                     <div>Wins</div>
                     <div>Goals</div>
-                    <div>Points</div>
+                    <div>Win %</div>
+                    <div>Pts</div>
                 </div>
             </div>
             <div class="table-body">
                 ${stats.map((player, index) => `
-                    <div class="table-row" data-label="Rank | Player | Matches | Wins | Goals | Points">
-                        <div data-label="Rank">${index + 1}</div>
+                    <div class="table-row" data-label="Player | Matches | Wins | Goals | Win % | Points">
                         <div class="player-info" data-label="Player">
                             <img src="${player.photo_url || 'src/images/default-avatar.jpg'}" 
                                  alt="${player.name}" class="player-avatar">
@@ -128,6 +126,7 @@ class FootballLeague {
                         <div data-label="Matches">${player.total_matches || 0}</div>
                         <div data-label="Wins">${player.total_wins || 0}</div>
                         <div data-label="Goals">${player.total_goals || 0}</div>
+                        <div data-label="Win %">${player.win_percentage ? player.win_percentage.toFixed(1) + '%' : '0%'}</div>
                         <div class="points" data-label="Points">${player.total_points || 0}</div>
                     </div>
                 `).join('')}

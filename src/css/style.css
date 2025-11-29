@@ -178,7 +178,7 @@ body {
 
 .table-row {
   display: grid;
-  grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 80px;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr 80px;
   padding: 1rem;
   border-bottom: 1px solid #333;
   align-items: center;
@@ -578,7 +578,7 @@ body {
 
   .table-row {
     display: grid;
-    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 80px;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr 80px;
     gap: 0.5rem;
     font-size: 0.9rem;
     padding: 0.75rem;
@@ -644,7 +644,7 @@ body {
 
   .table-row {
     display: grid;
-    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 80px;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr 1fr 80px;
     gap: 0.25rem;
     padding: 0.5rem;
     font-size: 0.85rem;
