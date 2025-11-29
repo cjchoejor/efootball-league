@@ -44,7 +44,7 @@ async function getTournamentStats(sql, tournamentId, limit) {
                 COALESCE(ts.points, 0) as points,
                 CASE 
                     WHEN COALESCE(ts.games_played, 0) > 0 
-                    THEN ROUND(CAST(ts.wins AS FLOAT) / ts.games_played * 100, 1)
+                    THEN ROUND(CAST(ts.wins AS NUMERIC) / ts.games_played * 100, 1)
                     ELSE 0 
                 END as win_percentage,
                 COALESCE(ts.goals_scored, 0) - COALESCE(ts.goals_conceded, 0) as goal_difference
@@ -94,7 +94,7 @@ async function getAllTimeStats(sql, limit) {
             COALESCE(ats.best_team, '') as best_team,
             CASE 
                 WHEN COALESCE(ats.total_matches, 0) > 0 
-                THEN ROUND(CAST(ats.total_wins AS FLOAT) / ats.total_matches * 100, 1)
+                THEN ROUND(CAST(ats.total_wins AS NUMERIC) / ats.total_matches * 100, 1)
                 ELSE 0 
             END as win_percentage,
             COALESCE(ats.total_points, 0) as total_points
