@@ -153,10 +153,10 @@ exports.handler = async (event) => {
         const matchId = matches[0].id;
         console.log('Found match ID:', matchId);
         
-        // Update match with goals
+        // Update match with goals (swapped: send A's goals to B, B's goals to A)
         await sql(
             'UPDATE matches SET goals_a = $1, goals_b = $2, status = $3 WHERE id = $4',
-            [goalsA, goalsB, 'completed', matchId]
+            [goalsB, goalsA, 'completed', matchId]
         );
         
         console.log('Match updated:', matchId);
@@ -167,17 +167,18 @@ exports.handler = async (event) => {
         if (match.length > 0) {
             const { tournament_id, player_a_id, player_b_id, team_a, team_b } = match[0];
             
-            const isWinA = goalsA > goalsB;
+            // Goals are swapped: goalsA sent by user goes to playerB, goalsB sent by user goes to playerA
+            const isWinA = goalsB > goalsA;
             const isDraw = goalsA === goalsB;
-            const isWinB = goalsB > goalsA;
+            const isWinB = goalsA > goalsB;
             
-            // Update tournament stats for both players
-            await updateTournamentStats(sql, tournament_id, player_a_id, goalsA, goalsB, isWinA, isDraw);
-            await updateTournamentStats(sql, tournament_id, player_b_id, goalsB, goalsA, isWinB, isDraw);
+            // Update tournament stats for both players (with swapped goals)
+            await updateTournamentStats(sql, tournament_id, player_a_id, goalsB, goalsA, isWinA, isDraw);
+            await updateTournamentStats(sql, tournament_id, player_b_id, goalsA, goalsB, isWinB, isDraw);
             
-            // Update all-time stats for both players
-            await updateAllTimeStats(sql, player_a_id, goalsA, goalsB, isWinA, isDraw, team_a);
-            await updateAllTimeStats(sql, player_b_id, goalsB, goalsA, isWinB, isDraw, team_b);
+            // Update all-time stats for both players (with swapped goals)
+            await updateAllTimeStats(sql, player_a_id, goalsB, goalsA, isWinA, isDraw, team_a);
+            await updateAllTimeStats(sql, player_b_id, goalsA, goalsB, isWinB, isDraw, team_b);
             
             // Check if tournament is complete
             await checkAndCompleteTournament(sql, tournament_id);

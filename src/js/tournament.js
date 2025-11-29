@@ -376,16 +376,18 @@ class TournamentManager {
                           const teamColor = colors[idx % colors.length];
                           
                           return `
-                        <div class="table-row" data-label="Player | Team | P | W | D | L | GF | GA | Pts">
+                        <div class="table-row" data-label="Player | P | W | D | L | GF | GA | Pts">
                             <div class="player-info" data-label="Player">
                                 <img src="${
                                   player.photo_url ||
                                   "src/images/default-avatar.jpg"
                                 }" 
                                      alt="${player.name}" class="player-avatar">
-                                <span>${player.name}</span>
+                                <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                    <span style="font-weight: 500;">${player.name}</span>
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); background: ${teamColor}20; padding: 0.25rem 0.5rem; border-radius: 4px; border-left: 3px solid ${teamColor};">${player.team_name}</span>
+                                </div>
                             </div>
-                            <div style="background: ${teamColor}20; padding: 0.5rem; border-radius: 6px; border-left: 3px solid ${teamColor};" data-label="Team">${player.team_name}</div>
                             <div data-label="P">${player.games_played}</div>
                             <div data-label="W">${player.wins}</div>
                             <div data-label="D">${player.draws}</div>
@@ -620,11 +622,6 @@ class TournamentManager {
     const playerASelect = document.getElementById("playerASelect");
     const playerBSelect = document.getElementById("playerBSelect");
     
-    console.log("=== setupMatchModal DEBUG ===");
-    console.log("Input stats:", JSON.stringify(stats));
-    console.log("Stats is array:", Array.isArray(stats));
-    console.log("Stats length:", stats ? stats.length : "undefined");
-    
     if (!playerASelect || !playerBSelect) {
       console.error("Player select elements not found in DOM");
       return;
@@ -638,20 +635,45 @@ class TournamentManager {
     }
 
     try {
-      const optionsHtml = stats
-        .map((p) => {
-          console.log("Processing player:", p.name, "ID:", p.id);
-          return `<option value="${p.id}">${p.name} (${p.team_name})</option>`;
-        })
+      // Create options for Player A (all players)
+      const playerAOptionsHtml = stats
+        .map((p) => `<option value="${p.id}">${p.name} (${p.team_name})</option>`)
         .join("");
       
-      console.log("Generated options HTML length:", optionsHtml.length);
-      console.log("First 500 chars of HTML:", optionsHtml.substring(0, 500));
-
-      playerASelect.innerHTML = optionsHtml;
-      playerBSelect.innerHTML = optionsHtml;
+      playerASelect.innerHTML = playerAOptionsHtml;
       
-      console.log("Successfully populated select elements");
+      // Update Player B options when Player A changes
+      playerASelect.addEventListener("change", () => {
+        const selectedPlayerAId = playerASelect.value;
+        
+        if (!selectedPlayerAId) {
+          // No player selected, show all players
+          const allOptionsHtml = stats
+            .map((p) => `<option value="${p.id}">${p.name} (${p.team_name})</option>`)
+            .join("");
+          playerBSelect.innerHTML = allOptionsHtml;
+        } else {
+          // Player A selected, show only opponents (exclude Player A)
+          const opponentOptionsHtml = stats
+            .filter((p) => p.id !== selectedPlayerAId)
+            .map((p) => `<option value="${p.id}">${p.name} (${p.team_name})</option>`)
+            .join("");
+          playerBSelect.innerHTML = opponentOptionsHtml;
+          
+          // Reset Player B selection if it was the same as Player A
+          if (playerBSelect.value === selectedPlayerAId) {
+            playerBSelect.value = "";
+          }
+        }
+      });
+      
+      // Initialize Player B with all options
+      const initialOptionsHtml = stats
+        .map((p) => `<option value="${p.id}">${p.name} (${p.team_name})</option>`)
+        .join("");
+      playerBSelect.innerHTML = initialOptionsHtml;
+      
+      console.log("Successfully populated select elements with filtering");
     } catch (error) {
       console.error("Error in setupMatchModal:", error);
     }

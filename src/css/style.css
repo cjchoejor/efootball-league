@@ -166,7 +166,7 @@ body {
 .leaderboard-table {
   background: var(--secondary-bg);
   border-radius: var(--border-radius);
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: var(--card-shadow);
 }
 
@@ -178,7 +178,7 @@ body {
 
 .table-row {
   display: grid;
-  grid-template-columns: 50px 2fr 1.5fr 1fr 1fr 1fr 1fr 80px;
+  grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 80px;
   padding: 1rem;
   border-bottom: 1px solid #333;
   align-items: center;
@@ -198,12 +198,13 @@ body {
 .points {
   background: var(--accent-green);
   color: var(--primary-bg);
-  padding: 0.5rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 6px;
   font-weight: bold;
   text-align: center;
   display: inline-block;
   min-width: fit-content;
+  font-size: 0.9rem;
 }
 
 .player-info {
@@ -576,26 +577,21 @@ body {
   }
 
   .table-row {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 80px;
     gap: 0.5rem;
     font-size: 0.9rem;
-    padding: 1rem 0.75rem;
-    display: flex;
-    flex-direction: column;
+    padding: 0.75rem;
+    white-space: nowrap;
   }
 
   .table-header {
     display: none;
   }
 
-  .table-row > div::before {
-    content: attr(data-label);
-    font-weight: bold;
-    color: var(--accent-green);
-    display: block;
-    margin-bottom: 0.25rem;
-    font-size: 0.7rem;
-    text-transform: uppercase;
+  .leaderboard-table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .tournaments-grid {
@@ -647,11 +643,12 @@ body {
   }
 
   .table-row {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 50px 2fr 1fr 1fr 1fr 1fr 1fr 80px;
     gap: 0.25rem;
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem;
     font-size: 0.85rem;
+    white-space: nowrap;
   }
 
   .player-avatar {
@@ -705,36 +702,43 @@ body {
 
   /* Mobile Match Cards */
   .match-card {
+    display: flex !important;
     flex-direction: column;
     align-items: center;
     gap: 0.75rem;
     text-align: center;
     padding: 0.75rem;
+    justify-content: center;
+    margin-bottom: 0.75rem;
   }
 
   .match-players {
     flex-direction: column;
     width: 100%;
     gap: 0.5rem;
-    flex: 1 !important;
-    order: 2;
+    flex: 1;
   }
 
   .match-players span {
     display: block;
     font-size: 0.85rem;
+    line-height: 1.4;
   }
 
   .match-score {
-    order: 1;
     width: 100%;
-    margin: 0 !important;
-    font-size: 1.3rem;
+    margin: 0;
+    font-size: 1.2rem;
   }
 
   .match-result {
-    order: 3;
     width: 100%;
+    font-size: 0.9rem;
+  }
+
+  #recentMatches,
+  #remainingMatches {
+    display: block !important;
   }
 
   /* Remaining matches section */
@@ -760,18 +764,34 @@ body {
 
   /* Match tabs */
   .matches-tabs {
+    display: flex !important;
     gap: 0.5rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
   }
 
   .tab-btn {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
+    display: block !important;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block !important;
   }
 
   .leaderboard-section,
   .matches-section {
     margin-top: 1rem;
+    display: block !important;
+  }
+
+  .section-title {
+    display: block !important;
   }
 
   .tournament-actions {
