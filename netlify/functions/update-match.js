@@ -72,11 +72,12 @@ async function checkAndCompleteTournament(sql, tournamentId) {
     );
     
     if (remaining[0].count === 0) {
-        // All matches completed, mark tournament as completed
+        // All matches completed, mark tournament as finished
         await sql(
             'UPDATE tournaments SET status = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2',
-            ['completed', tournamentId]
+            ['finished', tournamentId]
         );
+        console.log('Tournament ' + tournamentId + ' marked as finished');
         
         // Update tournament won count for players with highest points
         const leaderboard = await sql(`

@@ -423,14 +423,26 @@ class TournamentManager {
   setupMatchModal(tournament, stats) {
     const playerASelect = document.getElementById("playerASelect");
     const playerBSelect = document.getElementById("playerBSelect");
+    
+    console.log("setupMatchModal - stats:", stats);
+    console.log("setupMatchModal - stats is array:", Array.isArray(stats));
+    console.log("setupMatchModal - stats length:", stats ? stats.length : "N/A");
 
-    playerASelect.innerHTML = stats
+    if (!stats || !Array.isArray(stats) || stats.length === 0) {
+      console.error("No stats data available for player selection");
+      playerASelect.innerHTML = '<option value="">No players available</option>';
+      playerBSelect.innerHTML = '<option value="">No players available</option>';
+      return;
+    }
+
+    const optionsHtml = stats
       .map((p) => `<option value="${p.id}">${p.name} (${p.team_name})</option>`)
       .join("");
+    
+    console.log("Generated options HTML:", optionsHtml);
 
-    playerBSelect.innerHTML = stats
-      .map((p) => `<option value="${p.id}">${p.name} (${p.team_name})</option>`)
-      .join("");
+    playerASelect.innerHTML = optionsHtml;
+    playerBSelect.innerHTML = optionsHtml;
   }
 
   async deleteTournament() {

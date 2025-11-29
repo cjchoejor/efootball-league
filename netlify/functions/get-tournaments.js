@@ -10,7 +10,7 @@ exports.handler = async (event) => {
             SELECT t.*, 
                    COUNT(DISTINCT tp.player_id) as player_count,
                    COUNT(DISTINCT m.id) as total_matches,
-                   COUNT(DISTINCT CASE WHEN m.status = 'completed' THEN m.id END) as completed_matches
+                   COUNT(DISTINCT CASE WHEN m.status IN ('completed', 'finished') THEN m.id END) as completed_matches
             FROM tournaments t
             LEFT JOIN tournament_players tp ON t.id = tp.tournament_id
             LEFT JOIN matches m ON t.id = m.tournament_id

@@ -19,8 +19,8 @@ class FootballLeague {
             }
             this.renderOngoingTournament(ongoingData[0]);
 
-            // Load recent tournaments
-            const pastResponse = await fetch(`${this.baseUrl}/get-tournaments?status=completed&limit=3`);
+            // Load recent tournaments (finished status)
+            const pastResponse = await fetch(`${this.baseUrl}/get-tournaments?status=finished&limit=3`);
             let pastData = await pastResponse.json();
             if (pastData && pastData.body && typeof pastData.body === 'string') {
                 pastData = JSON.parse(pastData.body);

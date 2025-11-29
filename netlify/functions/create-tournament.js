@@ -9,10 +9,12 @@ exports.handler = async (event) => {
         const sql = neon();
         const { players, matchesPerPlayer } = JSON.parse(event.body);
         
-        // Get tournament count for naming (only count non-deleted tournaments)
-        const countResult = await sql('SELECT COUNT(*) as count FROM tournaments WHERE status != \'deleted\'');
-        const tournamentNumber = countResult[0].count + 1;
+        // Get tournament count for naming (count all tournaments regardless of status)
+        // This gives us sequential naming: WEEK 1, WEEK 2, WEEK 3, etc.
+        const countResult = await sql('SELECT COUNT(*) as count FROM tournaments');
+        const tournamentNumber = countResult && countResult[0] ? countResult[0].count + 1 : 1;
         const tournamentName = `WEEK ${tournamentNumber}`;
+        console.log('Tournament count result:', countResult, 'Tournament number:', tournamentNumber, 'Generated name:', tournamentName);
         const tournamentId = `tournament_${Date.now()}`;
         
         // Create tournament
