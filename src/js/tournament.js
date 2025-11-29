@@ -370,9 +370,14 @@ class TournamentManager {
                 <div class="table-body">
                     ${stats
                       .map(
-                        (player, idx) => `
-                        <div class="table-row">
-                            <div class="player-info">
+                        (player, idx) => {
+                          // Generate consistent team color based on team name
+                          const colors = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#FFA07A", "#98D8C8"];
+                          const teamColor = colors[idx % colors.length];
+                          
+                          return `
+                        <div class="table-row" data-label="Player | Team | P | W | D | L | GF | GA | Pts">
+                            <div class="player-info" data-label="Player">
                                 <img src="${
                                   player.photo_url ||
                                   "src/images/default-avatar.jpg"
@@ -380,16 +385,17 @@ class TournamentManager {
                                      alt="${player.name}" class="player-avatar">
                                 <span>${player.name}</span>
                             </div>
-                            <div>${player.team_name}</div>
-                            <div>${player.games_played}</div>
-                            <div>${player.wins}</div>
-                            <div>${player.draws}</div>
-                            <div>${player.losses}</div>
-                            <div>${player.goals_scored}</div>
-                            <div>${player.goals_conceded}</div>
-                            <div class="points">${player.points}</div>
+                            <div style="background: ${teamColor}20; padding: 0.5rem; border-radius: 6px; border-left: 3px solid ${teamColor};" data-label="Team">${player.team_name}</div>
+                            <div data-label="P">${player.games_played}</div>
+                            <div data-label="W">${player.wins}</div>
+                            <div data-label="D">${player.draws}</div>
+                            <div data-label="L">${player.losses}</div>
+                            <div data-label="GF">${player.goals_scored}</div>
+                            <div data-label="GA">${player.goals_conceded}</div>
+                            <div class="points" data-label="Pts">${player.points}</div>
                         </div>
-                    `
+                    `;
+                        }
                       )
                       .join("")}
                 </div>
