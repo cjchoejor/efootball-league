@@ -10,12 +10,15 @@ exports.handler = async (event) => {
         const { players, matchesPerPlayer } = JSON.parse(event.body);
         
         // Get tournament count for naming (count all tournaments regardless of status)
-        // This gives us sequential naming: WEEK 1, WEEK 2, WEEK 3, etc.
+        // This gives us sequential naming: WEEK 01, WEEK 02, WEEK 03, etc.
         const countResult = await sql('SELECT COUNT(*) as count FROM tournaments');
-        const tournamentNumber = countResult && countResult[0] ? countResult[0].count + 1 : 1;
-        const tournamentName = `WEEK ${tournamentNumber}`;
-        console.log('Tournament count result:', countResult, 'Tournament number:', tournamentNumber, 'Generated name:', tournamentName);
-        const tournamentId = `tournament_${Date.now()}`;
+        const tournamentNumber = countResult && countResult[0] && countResult[0].count !== undefined 
+            ? countResult[0].count + 1 
+            : 1;
+        const tournamentName = `WEEK ${String(tournamentNumber).padStart(2, '0')}`;
+        const tournamentId = `tournament_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        console.log('Tournament count:', countResult[0].count, 'New tournament number:', tournamentNumber, 'Name:', tournamentName, 'ID:', tournamentId);
         
         // Create tournament
         await sql(

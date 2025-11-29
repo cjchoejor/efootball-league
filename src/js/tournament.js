@@ -304,18 +304,26 @@ class TournamentManager {
       const statsResponse = await fetch(
         `${this.baseUrl}/get-stats?type=tournament&tournament_id=${tournamentId}`
       );
-      let stats = await statsResponse.json();
-      console.log("Stats raw response:", stats);
       
-      // Handle wrapped response if needed
-      if (stats && stats.body && typeof stats.body === "string") {
-        stats = JSON.parse(stats.body);
+      if (!statsResponse.ok) {
+        console.error("Stats API error:", statsResponse.status, statsResponse.statusText);
+        this.renderTournamentLeaderboard([]);
+      } else {
+        let stats = await statsResponse.json();
+        console.log("Stats raw response:", JSON.stringify(stats));
+        
+        // Handle wrapped response - check if it has statusCode and body
+        if (stats && stats.statusCode !== undefined && stats.body !== undefined) {
+          console.log("Unwrapping stats from Netlify wrapper format");
+          stats = typeof stats.body === "string" ? JSON.parse(stats.body) : stats.body;
+        }
+        
+        console.log("Stats after unwrap:", JSON.stringify(stats));
+        console.log("Stats is array:", Array.isArray(stats));
+        console.log("Stats length:", stats ? stats.length : "N/A");
+        
+        this.renderTournamentLeaderboard(stats);
       }
-      
-      console.log("Stats loaded:", stats);
-      console.log("Stats type:", typeof stats);
-      console.log("Stats is array:", Array.isArray(stats));
-      this.renderTournamentLeaderboard(stats);
 
       // Load upcoming matches for this pair
       await this.loadMatchesForTournament(tournamentId);
@@ -424,25 +432,41 @@ class TournamentManager {
     const playerASelect = document.getElementById("playerASelect");
     const playerBSelect = document.getElementById("playerBSelect");
     
-    console.log("setupMatchModal - stats:", stats);
-    console.log("setupMatchModal - stats is array:", Array.isArray(stats));
-    console.log("setupMatchModal - stats length:", stats ? stats.length : "N/A");
+    console.log("=== setupMatchModal DEBUG ===");
+    console.log("Input stats:", JSON.stringify(stats));
+    console.log("Stats is array:", Array.isArray(stats));
+    console.log("Stats length:", stats ? stats.length : "undefined");
+    
+    if (!playerASelect || !playerBSelect) {
+      console.error("Player select elements not found in DOM");
+      return;
+    }
 
     if (!stats || !Array.isArray(stats) || stats.length === 0) {
-      console.error("No stats data available for player selection");
+      console.error("No stats data available. Stats is null/not array/empty");
       playerASelect.innerHTML = '<option value="">No players available</option>';
       playerBSelect.innerHTML = '<option value="">No players available</option>';
       return;
     }
 
-    const optionsHtml = stats
-      .map((p) => `<option value="${p.id}">${p.name} (${p.team_name})</option>`)
-      .join("");
-    
-    console.log("Generated options HTML:", optionsHtml);
+    try {
+      const optionsHtml = stats
+        .map((p) => {
+          console.log("Processing player:", p.name, "ID:", p.id);
+          return `<option value="${p.id}">${p.name} (${p.team_name})</option>`;
+        })
+        .join("");
+      
+      console.log("Generated options HTML length:", optionsHtml.length);
+      console.log("First 500 chars of HTML:", optionsHtml.substring(0, 500));
 
-    playerASelect.innerHTML = optionsHtml;
-    playerBSelect.innerHTML = optionsHtml;
+      playerASelect.innerHTML = optionsHtml;
+      playerBSelect.innerHTML = optionsHtml;
+      
+      console.log("Successfully populated select elements");
+    } catch (error) {
+      console.error("Error in setupMatchModal:", error);
+    }
   }
 
   async deleteTournament() {
