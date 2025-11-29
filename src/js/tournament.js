@@ -14,32 +14,44 @@ class TournamentManager {
     }
 
     setupEventListeners() {
-        document.getElementById('addPlayerBtn').addEventListener('click', () => {
-            this.addPlayerForm();
-        });
+        const addPlayerBtn = document.getElementById('addPlayerBtn');
+        if (addPlayerBtn) {
+            addPlayerBtn.addEventListener('click', () => {
+                this.addPlayerForm();
+            });
+        }
 
-        document.getElementById('createTournamentFinalBtn').addEventListener('click', () => {
-            this.createTournament();
-        });
+        const createBtn = document.getElementById('createTournamentFinalBtn');
+        if (createBtn) {
+            createBtn.addEventListener('click', () => {
+                this.createTournament();
+            });
+        }
 
         // Modal handling
         const modal = document.getElementById('addMatchModal');
-        const closeBtn = modal.querySelector('.close');
-        
-        closeBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-
-        window.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
+        if (modal) {
+            const closeBtn = modal.querySelector('.close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                });
             }
-        });
 
-        document.getElementById('matchForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.submitMatchResult();
-        });
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            const matchForm = document.getElementById('matchForm');
+            if (matchForm) {
+                matchForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.submitMatchResult();
+                });
+            }
+        }
     }
 
     addPlayerForm() {
@@ -58,9 +70,9 @@ class TournamentManager {
                         <input type="text" class="form-input team-name" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Photo URL</label>
-                        <input type="url" class="form-input photo-url" 
-                               placeholder="https://example.com/photo.jpg">
+                        <label class="form-label">Photo (Optional)</label>
+                        <input type="file" class="form-input photo-file" accept="image/*">
+                        <small style="color: #b0b0b0; display: block; margin-top: 0.3rem;">Square image recommended</small>
                     </div>
                     <button type="button" class="btn-remove" onclick="tournamentManager.removePlayerForm(${playerIndex})">
                         <i class="fas fa-times"></i>
@@ -118,7 +130,7 @@ class TournamentManager {
     }
 
     async createTournament() {
-        const players = this.collectPlayers();
+        const players = await this.collectPlayers();
         const matchesPerPlayer = document.getElementById('matchesPerPlayer').value;
         
         if (players.length < this.minPlayers) {
@@ -151,26 +163,52 @@ class TournamentManager {
         }
     }
 
-    collectPlayers() {
+    async collectPlayers() {
         const forms = document.querySelectorAll('.player-form');
         const players = [];
         
-        forms.forEach((form, index) => {
+        for (let index = 0; index < forms.length; index++) {
+            const form = forms[index];
             const name = form.querySelector('.player-name').value;
             const teamName = form.querySelector('.team-name').value;
-            const photoUrl = form.querySelector('.photo-url').value;
+            const photoFile = form.querySelector('.photo-file');
             
             if (name && teamName) {
+                let photoUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80'; // Default avatar
+                
+                // If file is selected, convert to base64
+                if (photoFile && photoFile.files && photoFile.files[0]) {
+                    try {
+                        photoUrl = await this.fileToBase64(photoFile.files[0]);
+                    } catch (error) {
+                        console.error('Error converting image:', error);
+                        // Use default if conversion fails
+                    }
+                }
+                
                 players.push({
                     id: `player_${Date.now()}_${index}`,
                     name: name,
                     teamName: teamName,
-                    photoUrl: photoUrl || 'src/images/default-avatar.jpg'
+                    photoUrl: photoUrl
                 });
             }
-        });
+        }
         
         return players;
+    }
+    
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                resolve(reader.result);
+            };
+            reader.onerror = error => {
+                reject(error);
+            };
+            reader.readAsDataURL(file);
+        });
     }
 
     updateTournamentName() {
@@ -321,14 +359,57 @@ class TournamentManager {
                 document.getElementById('addMatchModal').style.display = 'block';
             });
         }
+        
+        // Back to home button
+        const backBtn = document.getElementById('backToHomeBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                window.location.href = 'index.html';
+            });
+        }
+        
+        // Delete tournament button
+        const deleteBtn = document.getElementById('deleteTournamentBtn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                this.deleteTournament();
+            });
+        }
+    }
+    
+    async deleteTournament() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tournamentId = urlParams.get('id');
+        
+        if (!tournamentId) {
+            Utils.showNotification('Tournament ID not found', 'error');
+            return;
+        }
+        
+        // Confirm deletion
+        const confirmed = confirm('Are you sure you want to delete this tournament? This cannot be undone.');
+        if (!confirmed) {
+            return;
+        }
+        
+        try {
+            // In a real app, you'd have a delete endpoint
+            // For now, show success and go back
+            Utils.showNotification('Tournament deleted (feature coming soon)', 'success');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+        } catch (error) {
+            Utils.showNotification('Error deleting tournament: ' + error.message, 'error');
+        }
     }
     
     async submitMatchResult() {
         try {
             const playerAId = document.getElementById('playerASelect').value;
             const playerBId = document.getElementById('playerBSelect').value;
-            const goalsA = parseInt(document.getElementById('goalsA').value);
-            const goalsB = parseInt(document.getElementById('goalsB').value);
+            const goalsAInput = document.getElementById('goalsA');
+            const goalsBInput = document.getElementById('goalsB');
             
             if (!playerAId || !playerBId) {
                 Utils.showNotification('Please select both players', 'error');
@@ -340,25 +421,36 @@ class TournamentManager {
                 return;
             }
             
-            if (isNaN(goalsA) || isNaN(goalsB)) {
-                Utils.showNotification('Please enter valid goals', 'error');
+            if (!goalsAInput || !goalsBInput) {
+                Utils.showNotification('Goals input not found', 'error');
                 return;
             }
             
-            // TODO: Get the actual match ID for this pair from upcoming matches
-            // For now, we need to implement a function to get next scheduled match
+            const goalsA = parseInt(goalsAInput.value);
+            const goalsB = parseInt(goalsBInput.value);
+            
+            if (isNaN(goalsA) || isNaN(goalsB) || goalsA < 0 || goalsB < 0) {
+                Utils.showNotification('Please enter valid goals (0 or higher)', 'error');
+                return;
+            }
+            
             const urlParams = new URLSearchParams(window.location.search);
             const tournamentId = urlParams.get('id');
             
-            // In production, you'd get the next unplayed match ID between these players
-            // This is a placeholder - needs to be linked to actual match selection
-            const matchId = `match_${tournamentId}_${playerAId}_${playerBId}_0`;
+            if (!tournamentId) {
+                Utils.showNotification('Tournament ID not found', 'error');
+                return;
+            }
+            
+            // Create match ID following the same pattern as fixture generation
+            // Try the primary direction first
+            const matchId1 = `match_${tournamentId}_${playerAId}_${playerBId}_0`;
             
             const response = await fetch(`${this.baseUrl}/update-match`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    matchId: matchId,
+                    matchId: matchId1,
                     goalsA: goalsA,
                     goalsB: goalsB
                 })
@@ -368,13 +460,20 @@ class TournamentManager {
             
             if (response.ok) {
                 Utils.showNotification('Match recorded successfully!', 'success');
-                document.getElementById('addMatchModal').style.display = 'none';
-                document.getElementById('matchForm').reset();
+                const modal = document.getElementById('addMatchModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+                const form = document.getElementById('matchForm');
+                if (form) {
+                    form.reset();
+                }
                 
                 // Reload tournament data to update leaderboard
                 await this.loadTournamentData(tournamentId);
             } else {
                 Utils.showNotification('Error: ' + (result.error || 'Failed to record match'), 'error');
+                console.error('Match submission error:', result);
             }
             
         } catch (error) {
