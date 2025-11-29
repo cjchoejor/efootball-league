@@ -9,9 +9,10 @@ exports.handler = async (event) => {
         const sql = neon();
         const { players, matchesPerPlayer } = JSON.parse(event.body);
         
-        // Get tournament count for naming
-        const countResult = await sql('SELECT COUNT(*) as count FROM tournaments');
-        const tournamentName = `WEEK ${countResult[0].count + 1}`;
+        // Get tournament count for naming (only count non-deleted tournaments)
+        const countResult = await sql('SELECT COUNT(*) as count FROM tournaments WHERE status != \'deleted\'');
+        const tournamentNumber = countResult[0].count + 1;
+        const tournamentName = `WEEK ${tournamentNumber}`;
         const tournamentId = `tournament_${Date.now()}`;
         
         // Create tournament

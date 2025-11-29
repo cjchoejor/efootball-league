@@ -51,6 +51,13 @@ body {
   gap: 0.5rem;
 }
 
+.nav-logo-img {
+  height: 40px;
+  width: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .nav-menu {
   display: flex;
   gap: 2rem;
@@ -420,6 +427,20 @@ body {
 @media (max-width: 768px) {
   .nav-menu {
     display: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    background: var(--secondary-bg);
+    padding: 1rem;
+    gap: 1rem;
+    border-bottom: 2px solid var(--accent-green);
+    z-index: 999;
+  }
+
+  .nav-menu.open {
+    display: flex;
   }
 
   .nav-toggle {

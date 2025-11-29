@@ -74,6 +74,24 @@ class TournamentManager {
         this.deleteTournament();
       });
     }
+
+    // Mobile hamburger menu
+    const navToggle = document.querySelector(".nav-toggle");
+    const navMenu = document.querySelector(".nav-menu");
+
+    if (navToggle && navMenu) {
+      navToggle.addEventListener("click", () => {
+        navMenu.classList.toggle("open");
+      });
+
+      // Close menu when a link is clicked
+      const navLinks = document.querySelectorAll(".nav-link");
+      navLinks.forEach((link) => {
+        link.addEventListener("click", () => {
+          navMenu.classList.remove("open");
+        });
+      });
+    }
   }
 
   addPlayerForm() {
@@ -433,15 +451,25 @@ class TournamentManager {
     }
 
     try {
-      // In a real app, you'd have a delete endpoint
-      // For now, show success and go back
-      Utils.showNotification(
-        "Tournament deleted (feature coming soon)",
-        "success"
-      );
-      setTimeout(() => {
-        window.location.href = "index.html";
-      }, 1500);
+      const response = await fetch(`${this.baseUrl}/delete-tournament`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tournamentId }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        Utils.showNotification("Tournament deleted successfully!", "success");
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 1500);
+      } else {
+        Utils.showNotification(
+          "Error: " + (result.error || "Failed to delete tournament"),
+          "error"
+        );
+      }
     } catch (error) {
       Utils.showNotification(
         "Error deleting tournament: " + error.message,

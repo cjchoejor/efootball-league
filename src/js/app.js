@@ -13,17 +13,26 @@ class FootballLeague {
         try {
             // Load ongoing tournament
             const ongoingResponse = await fetch(`${this.baseUrl}/get-tournaments?status=ongoing`);
-            const ongoingData = await ongoingResponse.json();
+            let ongoingData = await ongoingResponse.json();
+            if (ongoingData && ongoingData.body && typeof ongoingData.body === 'string') {
+                ongoingData = JSON.parse(ongoingData.body);
+            }
             this.renderOngoingTournament(ongoingData[0]);
 
             // Load recent tournaments
             const pastResponse = await fetch(`${this.baseUrl}/get-tournaments?status=completed&limit=3`);
-            const pastData = await pastResponse.json();
+            let pastData = await pastResponse.json();
+            if (pastData && pastData.body && typeof pastData.body === 'string') {
+                pastData = JSON.parse(pastData.body);
+            }
             this.renderPastTournamentsPreview(pastData);
 
             // Load leaderboard preview
             const leaderboardResponse = await fetch(`${this.baseUrl}/get-stats?type=all-time&limit=5`);
-            const leaderboardData = await leaderboardResponse.json();
+            let leaderboardData = await leaderboardResponse.json();
+            if (leaderboardData && leaderboardData.body && typeof leaderboardData.body === 'string') {
+                leaderboardData = JSON.parse(leaderboardData.body);
+            }
             this.renderLeaderboardPreview(leaderboardData);
 
         } catch (error) {
@@ -131,6 +140,24 @@ class FootballLeague {
         if (createBtn) {
             createBtn.addEventListener('click', () => {
                 window.location.href = 'tournament.html?create=new';
+            });
+        }
+
+        // Mobile hamburger menu
+        const navToggle = document.querySelector('.nav-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+        
+        if (navToggle && navMenu) {
+            navToggle.addEventListener('click', () => {
+                navMenu.classList.toggle('open');
+            });
+
+            // Close menu when a link is clicked
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    navMenu.classList.remove('open');
+                });
             });
         }
     }
