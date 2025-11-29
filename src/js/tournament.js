@@ -330,11 +330,15 @@ class TournamentManager {
         this.renderTournamentLeaderboard(stats);
       }
 
-      // Load upcoming matches for this pair
-      await this.loadMatchesForTournament(tournamentId);
+      // Load recent and remaining matches
+      await this.loadRecentMatches(tournamentId);
+      await this.loadRemainingMatches(tournamentId, stats);
 
       // Setup match submission
       this.setupMatchModal(tournament, stats);
+      
+      // Setup match tabs
+      this.setupMatchTabs();
     } catch (error) {
       console.error("Error loading tournament data:", error);
     }
@@ -395,10 +399,10 @@ class TournamentManager {
     container.innerHTML = tableHtml;
   }
 
-  async loadMatchesForTournament(tournamentId) {
+  async loadRecentMatches(tournamentId) {
     try {
       const response = await fetch(
-        `${this.baseUrl}/get-matches?tournament_id=${tournamentId}&status=scheduled&limit=5`
+        `${this.baseUrl}/get-matches?tournament_id=${tournamentId}&status=completed&limit=3`
       );
       let matches = await response.json();
       
@@ -410,27 +414,143 @@ class TournamentManager {
       const container = document.getElementById("recentMatches");
 
       if (!matches || matches.length === 0) {
-        container.innerHTML = "<p>No scheduled matches</p>";
+        container.innerHTML = "<p>No completed matches yet</p>";
         return;
       }
 
       container.innerHTML = matches
-        .map(
-          (match) => `
+        .map((match) => {
+          const isWin =
+            match.goals_a > match.goals_b
+              ? "Won"
+              : match.goals_a < match.goals_b
+                ? "Lost"
+                : "Draw";
+          const winner =
+            match.goals_a > match.goals_b
+              ? match.player_a_name
+              : match.goals_a < match.goals_b
+                ? match.player_b_name
+                : "Draw";
+
+          return `
                 <div class="match-card">
                     <div class="match-players">
-                        <span>${match.player_a_name}</span>
+                        <span>${match.player_a_name} (${match.team_a})</span>
                         <span>vs</span>
-                        <span>${match.player_b_name}</span>
+                        <span>${match.player_b_name} (${match.team_b})</span>
                     </div>
-                    <div class="match-status">Scheduled</div>
+                    <div class="match-score">${match.goals_a} - ${match.goals_b}</div>
+                    <div class="match-result">${winner}</div>
                 </div>
-            `
-        )
+            `;
+        })
         .join("");
     } catch (error) {
-      console.error("Error loading matches:", error);
+      console.error("Error loading recent matches:", error);
     }
+  }
+
+  async loadRemainingMatches(tournamentId, stats) {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/get-matches?tournament_id=${tournamentId}&status=scheduled`
+      );
+      let matches = await response.json();
+      
+      // Handle wrapped response if needed
+      if (matches && matches.body && typeof matches.body === "string") {
+        matches = JSON.parse(matches.body);
+      }
+
+      const container = document.getElementById("remainingMatches");
+
+      if (!matches || matches.length === 0) {
+        container.innerHTML = "<p>No remaining matches</p>";
+        return;
+      }
+
+      // Group remaining matches by player
+      const matchByPlayer = {};
+      
+      stats.forEach((player) => {
+        matchByPlayer[player.id] = {};
+      });
+
+      matches.forEach((match) => {
+        if (!matchByPlayer[match.player_a_id]) {
+          matchByPlayer[match.player_a_id] = {};
+        }
+        if (!matchByPlayer[match.player_b_id]) {
+          matchByPlayer[match.player_b_id] = {};
+        }
+
+        const opponent = match.player_a_id === match.player_a_id ? match.player_b_id : match.player_a_id;
+        matchByPlayer[match.player_a_id][match.player_b_id] =
+          (matchByPlayer[match.player_a_id][match.player_b_id] || 0) + 1;
+        matchByPlayer[match.player_b_id][match.player_a_id] =
+          (matchByPlayer[match.player_b_id][match.player_a_id] || 0) + 1;
+      });
+
+      // Render grouped matches
+      let html = "";
+      stats.forEach((player) => {
+        const opponentMatches = Object.keys(matchByPlayer[player.id]);
+        
+        if (opponentMatches.length > 0) {
+          html += `
+                <div class="remaining-match-group">
+                    <div class="remaining-match-player">
+                        <img src="${player.photo_url || 'src/images/default-avatar.jpg'}" 
+                             alt="${player.name}" class="player-avatar" style="width: 30px; height: 30px;">
+                        ${player.name} (${player.team_name})
+                    </div>
+                    <div class="remaining-match-list">
+          `;
+
+          opponentMatches.forEach((opponentId) => {
+            const opponent = stats.find((p) => p.id === opponentId);
+            const matchCount = matchByPlayer[player.id][opponentId];
+            
+            if (opponent) {
+              html += `
+                        <div class="remaining-match-item">
+                            vs ${opponent.name} (${opponent.team_name}): ${matchCount} match${matchCount > 1 ? "es" : ""} remaining
+                        </div>
+                    `;
+            }
+          });
+
+          html += `
+                    </div>
+                </div>
+            `;
+        }
+      });
+
+      container.innerHTML = html || "<p>No remaining matches</p>";
+    } catch (error) {
+      console.error("Error loading remaining matches:", error);
+    }
+  }
+
+  setupMatchTabs() {
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tabName = btn.getAttribute("data-tab");
+
+        // Remove active class from all buttons and contents
+        tabButtons.forEach((b) => b.classList.remove("active"));
+        tabContents.forEach((c) => c.classList.remove("active"));
+
+        // Add active class to clicked button and corresponding content
+        btn.classList.add("active");
+        document.getElementById(tabName + "MatchesTab").classList.add("active");
+      });
+    });
   }
 
   setupMatchModal(tournament, stats) {

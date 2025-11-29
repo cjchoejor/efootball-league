@@ -125,10 +125,28 @@ exports.handler = async (event) => {
         const matches = await sql(matchQuery, [tournamentId, playerAId, playerBId]);
         
         if (!matches || matches.length === 0) {
-            console.error('No scheduled match found for players:', playerAId, playerBId);
+            console.log('No scheduled match found, checking if completed matches exist...');
+            
+            // Check if completed matches exist
+            const completedCheck = await sql(`
+                SELECT COUNT(*) as count FROM matches 
+                WHERE tournament_id = $1 
+                  AND status = 'completed'
+                  AND ((player_a_id = $2 AND player_b_id = $3) 
+                       OR (player_a_id = $3 AND player_b_id = $2))
+            `, [tournamentId, playerAId, playerBId]);
+            
+            if (completedCheck[0].count > 0) {
+                console.log('Completed matches found for these players');
+                return {
+                    statusCode: 409,
+                    body: JSON.stringify({ error: `All matches finished with this player` })
+                };
+            }
+            
             return {
                 statusCode: 404,
-                body: JSON.stringify({ error: 'No scheduled match found between these players' })
+                body: JSON.stringify({ error: 'No match found between these players' })
             };
         }
         

@@ -76,8 +76,18 @@
             </div>
             
             <div class="matches-section">
-                <h3>Recent Matches</h3>
-                <div id="recentMatches"></div>
+                <div class="matches-tabs">
+                    <button class="tab-btn active" data-tab="recent">Recent Matches</button>
+                    <button class="tab-btn" data-tab="remaining">Remaining Matches</button>
+                </div>
+                
+                <div id="recentMatchesTab" class="tab-content active">
+                    <div id="recentMatches"></div>
+                </div>
+                
+                <div id="remainingMatchesTab" class="tab-content">
+                    <div id="remainingMatches"></div>
+                </div>
             </div>
         </div>
 
