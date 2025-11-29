@@ -26,45 +26,54 @@ exports.handler = async (event) => {
 };
 
 async function getTournamentStats(sql, tournamentId, limit) {
-    let query = `
-        SELECT 
-            p.id,
-            p.name,
-            p.team_name,
-            p.photo_url,
-            COALESCE(ts.games_played, 0) as games_played,
-            COALESCE(ts.wins, 0) as wins,
-            COALESCE(ts.draws, 0) as draws,
-            COALESCE(ts.losses, 0) as losses,
-            COALESCE(ts.goals_scored, 0) as goals_scored,
-            COALESCE(ts.goals_conceded, 0) as goals_conceded,
-            COALESCE(ts.points, 0) as points,
-            CASE 
-                WHEN COALESCE(ts.games_played, 0) > 0 
-                THEN ROUND(CAST(ts.wins AS FLOAT) / ts.games_played * 100, 1)
-                ELSE 0 
-            END as win_percentage,
-            COALESCE(ts.goals_scored, 0) - COALESCE(ts.goals_conceded, 0) as goal_difference
-        FROM tournament_players tp
-        JOIN players p ON tp.player_id = p.id
-        LEFT JOIN tournament_stats ts ON ts.tournament_id = $1 AND ts.player_id = p.id
-        WHERE tp.tournament_id = $2
-        ORDER BY COALESCE(ts.points, 0) DESC, COALESCE(ts.goals_scored, 0) DESC
-    `;
-    
-    const params = [tournamentId, tournamentId];
-    
-    if (limit) {
-        query += ` LIMIT $3`;
-        params.push(parseInt(limit));
+    try {
+        console.log('getTournamentStats called with:', { tournamentId, limit });
+        
+        let query = `
+            SELECT 
+                p.id,
+                p.name,
+                p.team_name,
+                p.photo_url,
+                COALESCE(ts.games_played, 0) as games_played,
+                COALESCE(ts.wins, 0) as wins,
+                COALESCE(ts.draws, 0) as draws,
+                COALESCE(ts.losses, 0) as losses,
+                COALESCE(ts.goals_scored, 0) as goals_scored,
+                COALESCE(ts.goals_conceded, 0) as goals_conceded,
+                COALESCE(ts.points, 0) as points,
+                CASE 
+                    WHEN COALESCE(ts.games_played, 0) > 0 
+                    THEN ROUND(CAST(ts.wins AS FLOAT) / ts.games_played * 100, 1)
+                    ELSE 0 
+                END as win_percentage,
+                COALESCE(ts.goals_scored, 0) - COALESCE(ts.goals_conceded, 0) as goal_difference
+            FROM tournament_players tp
+            JOIN players p ON tp.player_id = p.id
+            LEFT JOIN tournament_stats ts ON ts.tournament_id = $1 AND ts.player_id = p.id
+            WHERE tp.tournament_id = $2
+            ORDER BY COALESCE(ts.points, 0) DESC, COALESCE(ts.goals_scored, 0) DESC
+        `;
+        
+        const params = [tournamentId, tournamentId];
+        
+        if (limit) {
+            query += ` LIMIT $3`;
+            params.push(parseInt(limit));
+        }
+        
+        console.log('Executing query with params:', params);
+        const stats = await sql(query, params);
+        console.log('Query result:', stats);
+        
+        return {
+            statusCode: 200,
+            body: JSON.stringify(stats)
+        };
+    } catch (error) {
+        console.error('Error in getTournamentStats:', error.message);
+        throw error;
     }
-    
-    const stats = await sql(query, params);
-    
-    return {
-        statusCode: 200,
-        body: JSON.stringify(stats)
-    };
 }
 
 async function getAllTimeStats(sql, limit) {

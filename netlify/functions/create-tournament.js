@@ -27,17 +27,21 @@ exports.handler = async (event) => {
         );
         
         // Add players and create fixtures
+        console.log('Adding ' + players.length + ' players to tournament');
         for (const player of players) {
+            console.log('Inserting player:', player.id, player.name);
             await sql(
                 'INSERT INTO players (id, name, team_name, photo_url) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING',
                 [player.id, player.name, player.teamName, player.photoUrl]
             );
             
+            console.log('Adding player to tournament_players:', tournamentId, player.id);
             await sql(
                 'INSERT INTO tournament_players (tournament_id, player_id) VALUES ($1, $2)',
                 [tournamentId, player.id]
             );
         }
+        console.log('Finished adding all players');
         
         // Generate fixtures
         await generateFixtures(sql, tournamentId, players, matchesPerPlayer);

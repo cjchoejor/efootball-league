@@ -279,6 +279,8 @@ class TournamentManager {
   }
 
   async loadTournamentData(tournamentId) {
+    let stats = [];
+    
     try {
       // Load tournament info
       const tourResponse = await fetch(
@@ -307,9 +309,12 @@ class TournamentManager {
       
       if (!statsResponse.ok) {
         console.error("Stats API error:", statsResponse.status, statsResponse.statusText);
+        const errorBody = await statsResponse.text();
+        console.error("Error response body:", errorBody);
+        stats = [];
         this.renderTournamentLeaderboard([]);
       } else {
-        let stats = await statsResponse.json();
+        stats = await statsResponse.json();
         console.log("Stats raw response:", JSON.stringify(stats));
         
         // Handle wrapped response - check if it has statusCode and body
