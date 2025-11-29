@@ -1,10 +1,10 @@
-const { NetlifyDB } = require('@netlify/functions');
+const { neon } = require('@netlify/neon');
 
 exports.handler = async (event) => {
     const { tournament_id, status, limit } = event.queryStringParameters || {};
     
     try {
-        const db = new NetlifyDB();
+        const sql = neon();
         
         let query = `
             SELECT 
@@ -27,24 +27,28 @@ exports.handler = async (event) => {
         `;
         
         const params = [];
+        let paramCount = 1;
         
         if (tournament_id) {
-            query += ' AND m.tournament_id = ?';
+            query += ` AND m.tournament_id = $${paramCount}`;
             params.push(tournament_id);
+            paramCount++;
         }
         
         if (status) {
-            query += ' AND m.status = ?';
+            query += ` AND m.status = $${paramCount}`;
             params.push(status);
+            paramCount++;
         }
         
-        query += ' ORDER BY m.match_date DESC';
+        query += ` ORDER BY m.match_date DESC`;
         
         if (limit) {
-            query += ` LIMIT ${parseInt(limit)}`;
+            query += ` LIMIT $${paramCount}`;
+            params.push(parseInt(limit));
         }
         
-        const matches = await db.query(query, params);
+        const matches = await sql(query, params);
         
         return {
             statusCode: 200,

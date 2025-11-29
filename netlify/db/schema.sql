@@ -52,7 +52,9 @@ CREATE TABLE IF NOT EXISTS tournament_stats (
     goals_scored INTEGER DEFAULT 0,
     goals_conceded INTEGER DEFAULT 0,
     points INTEGER DEFAULT 0,
-    PRIMARY KEY (tournament_id, player_id)
+    PRIMARY KEY (tournament_id, player_id),
+    FOREIGN KEY (tournament_id) REFERENCES tournaments(id),
+    FOREIGN KEY (player_id) REFERENCES players(id)
 );
 
 -- All-time stats table
@@ -70,3 +72,11 @@ CREATE TABLE IF NOT EXISTS all_time_stats (
     best_team TEXT,
     FOREIGN KEY (player_id) REFERENCES players(id)
 );
+
+-- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
+CREATE INDEX IF NOT EXISTS idx_tournaments_created_at ON tournaments(created_at);
+CREATE INDEX IF NOT EXISTS idx_matches_tournament_id ON matches(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
+CREATE INDEX IF NOT EXISTS idx_tournament_stats_tournament ON tournament_stats(tournament_id);
+CREATE INDEX IF NOT EXISTS idx_all_time_stats_points ON all_time_stats(total_points);

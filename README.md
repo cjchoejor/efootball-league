@@ -17,7 +17,7 @@ A modern, responsive web application for managing eFootball tournaments with per
 
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
 - **Backend**: Netlify Functions
-- **Database**: Netlify DB (SQLite)
+- **Database**: Neon PostgreSQL (powered by Neon)
 - **Hosting**: Netlify
 
 ## Project Structure

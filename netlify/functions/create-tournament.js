@@ -1,43 +1,40 @@
-const { NetlifyDB } = require('@netlify/functions');
+const { neon } = require('@netlify/neon');
 
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
-        return { statusCode: 405, body: 'Method Not Allowed' };
+        return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
     }
 
     try {
-        const db = new NetlifyDB();
+        const sql = neon();
         const { players, matchesPerPlayer } = JSON.parse(event.body);
         
         // Get tournament count for naming
-        const countResult = await db.query(
-            'SELECT COUNT(*) as count FROM tournaments'
-        );
-        
+        const countResult = await sql('SELECT COUNT(*) as count FROM tournaments');
         const tournamentName = `WEEK ${countResult[0].count + 1}`;
         const tournamentId = `tournament_${Date.now()}`;
         
         // Create tournament
-        await db.query(
-            'INSERT INTO tournaments (id, name, matches_per_player) VALUES (?, ?, ?)',
+        await sql(
+            'INSERT INTO tournaments (id, name, matches_per_player) VALUES ($1, $2, $3)',
             [tournamentId, tournamentName, matchesPerPlayer]
         );
         
         // Add players and create fixtures
         for (const player of players) {
-            await db.query(
-                'INSERT OR IGNORE INTO players (id, name, team_name, photo_url) VALUES (?, ?, ?, ?)',
+            await sql(
+                'INSERT INTO players (id, name, team_name, photo_url) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO NOTHING',
                 [player.id, player.name, player.teamName, player.photoUrl]
             );
             
-            await db.query(
-                'INSERT INTO tournament_players (tournament_id, player_id) VALUES (?, ?)',
+            await sql(
+                'INSERT INTO tournament_players (tournament_id, player_id) VALUES ($1, $2)',
                 [tournamentId, player.id]
             );
         }
         
         // Generate fixtures
-        await generateFixtures(db, tournamentId, players, matchesPerPlayer);
+        await generateFixtures(sql, tournamentId, players, matchesPerPlayer);
         
         return {
             statusCode: 200,
@@ -52,13 +49,13 @@ exports.handler = async (event) => {
     }
 };
 
-async function generateFixtures(db, tournamentId, players, matchesPerPlayer) {
+async function generateFixtures(sql, tournamentId, players, matchesPerPlayer) {
     const matchesPerPair = calculateMatchesPerPair(players.length, matchesPerPlayer);
     
     // Initialize tournament stats for each player
     for (const player of players) {
-        await db.query(
-            'INSERT OR IGNORE INTO tournament_stats (tournament_id, player_id, games_played, wins, draws, losses, goals_scored, goals_conceded, points) VALUES (?, ?, 0, 0, 0, 0, 0, 0, 0)',
+        await sql(
+            'INSERT INTO tournament_stats (tournament_id, player_id, games_played, wins, draws, losses, goals_scored, goals_conceded, points) VALUES ($1, $2, 0, 0, 0, 0, 0, 0, 0) ON CONFLICT (tournament_id, player_id) DO NOTHING',
             [tournamentId, player.id]
         );
     }
@@ -69,15 +66,15 @@ async function generateFixtures(db, tournamentId, players, matchesPerPlayer) {
             for (let k = 0; k < matchesPerPair; k++) {
                 // Match: Player i vs Player j
                 const matchId1 = `match_${tournamentId}_${i}_${j}_${k}`;
-                await db.query(
-                    'INSERT INTO matches (id, tournament_id, player_a_id, player_b_id, status) VALUES (?, ?, ?, ?, ?)',
+                await sql(
+                    'INSERT INTO matches (id, tournament_id, player_a_id, player_b_id, status) VALUES ($1, $2, $3, $4, $5)',
                     [matchId1, tournamentId, players[i].id, players[j].id, 'scheduled']
                 );
                 
                 // Reverse match: Player j vs Player i
                 const matchId2 = `match_${tournamentId}_${j}_${i}_${k}`;
-                await db.query(
-                    'INSERT INTO matches (id, tournament_id, player_a_id, player_b_id, status) VALUES (?, ?, ?, ?, ?)',
+                await sql(
+                    'INSERT INTO matches (id, tournament_id, player_a_id, player_b_id, status) VALUES ($1, $2, $3, $4, $5)',
                     [matchId2, tournamentId, players[j].id, players[i].id, 'scheduled']
                 );
             }

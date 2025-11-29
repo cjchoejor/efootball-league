@@ -15,15 +15,15 @@
 ### 1️⃣ Commit & Push (1 min)
 ```bash
 git add .
-git commit -m "fix: add @netlify/functions and fix database imports"
+git commit -m "feat: migrate to Neon PostgreSQL"
 git push origin main
 ```
 
-### 2️⃣ Redeploy on Netlify (3 min)
-- Go to https://app.netlify.com
-- Click your site
-- Click **Trigger deploy**
-- Wait for ✅ success
+### 2️⃣ Deploy & Create Tables (3 min)
+- Netlify auto-deploys (wait 2-3 minutes)
+- Go to https://console.neon.tech
+- SQL Editor → Copy & paste `netlify/db/schema.sql`
+- Click Execute to create 6 tables
 
 ### 3️⃣ Verify & Test (1 min)
 - Site should load at your Netlify URL

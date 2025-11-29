@@ -1,10 +1,10 @@
-const { NetlifyDB } = require('@netlify/functions');
+const { neon } = require('@netlify/neon');
 
 exports.handler = async (event) => {
     const { id, status, limit } = event.queryStringParameters || {};
     
     try {
-        const db = new NetlifyDB();
+        const sql = neon();
         
         let query = `
             SELECT t.*, 
@@ -17,28 +17,31 @@ exports.handler = async (event) => {
         `;
         
         const params = [];
+        let paramCount = 1;
         let hasWhere = false;
         
         if (id) {
-            query += ' WHERE t.id = ?';
+            query += ` WHERE t.id = $${paramCount}`;
             params.push(id);
+            paramCount++;
             hasWhere = true;
         }
         
         if (status) {
-            query += hasWhere ? ' AND' : ' WHERE';
-            query += ' t.status = ?';
+            query += hasWhere ? ` AND` : ` WHERE`;
+            query += ` t.status = $${paramCount}`;
             params.push(status);
+            paramCount++;
         }
         
-        query += ' GROUP BY t.id ORDER BY t.created_at DESC';
+        query += ` GROUP BY t.id ORDER BY t.created_at DESC`;
         
         if (limit) {
-            query += ' LIMIT ?';
+            query += ` LIMIT $${paramCount}`;
             params.push(parseInt(limit));
         }
         
-        const tournaments = await db.query(query, params);
+        const tournaments = await sql(query, params);
         
         return {
             statusCode: 200,

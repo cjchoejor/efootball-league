@@ -1,15 +1,15 @@
-const { NetlifyDB } = require('@netlify/functions');
+const { neon } = require('@netlify/neon');
 
 exports.handler = async (event) => {
     const { type, tournament_id, limit } = event.queryStringParameters || {};
     
     try {
-        const db = new NetlifyDB();
+        const sql = neon();
         
         if (type === 'tournament') {
-            return await getTournamentStats(db, tournament_id, limit);
+            return await getTournamentStats(sql, tournament_id, limit);
         } else if (type === 'all-time') {
-            return await getAllTimeStats(db, limit);
+            return await getAllTimeStats(sql, limit);
         } else {
             return {
                 statusCode: 400,
@@ -25,7 +25,7 @@ exports.handler = async (event) => {
     }
 };
 
-async function getTournamentStats(db, tournamentId, limit) {
+async function getTournamentStats(sql, tournamentId, limit) {
     let query = `
         SELECT 
             p.id,
@@ -41,22 +41,25 @@ async function getTournamentStats(db, tournamentId, limit) {
             COALESCE(ts.points, 0) as points,
             CASE 
                 WHEN COALESCE(ts.games_played, 0) > 0 
-                THEN CAST(ts.wins AS FLOAT) / ts.games_played * 100
+                THEN ROUND(CAST(ts.wins AS FLOAT) / ts.games_played * 100, 1)
                 ELSE 0 
             END as win_percentage,
             COALESCE(ts.goals_scored, 0) - COALESCE(ts.goals_conceded, 0) as goal_difference
         FROM tournament_players tp
         JOIN players p ON tp.player_id = p.id
-        LEFT JOIN tournament_stats ts ON ts.tournament_id = ? AND ts.player_id = p.id
-        WHERE tp.tournament_id = ?
+        LEFT JOIN tournament_stats ts ON ts.tournament_id = $1 AND ts.player_id = p.id
+        WHERE tp.tournament_id = $2
         ORDER BY COALESCE(ts.points, 0) DESC, COALESCE(ts.goals_scored, 0) DESC
     `;
     
+    const params = [tournamentId, tournamentId];
+    
     if (limit) {
-        query += ` LIMIT ${parseInt(limit)}`;
+        query += ` LIMIT $3`;
+        params.push(parseInt(limit));
     }
     
-    const stats = await db.query(query, [tournamentId, tournamentId]);
+    const stats = await sql(query, params);
     
     return {
         statusCode: 200,
@@ -64,7 +67,7 @@ async function getTournamentStats(db, tournamentId, limit) {
     };
 }
 
-async function getAllTimeStats(db, limit) {
+async function getAllTimeStats(sql, limit) {
     let query = `
         SELECT 
             p.id,
@@ -82,7 +85,7 @@ async function getAllTimeStats(db, limit) {
             COALESCE(ats.best_team, '') as best_team,
             CASE 
                 WHEN COALESCE(ats.total_matches, 0) > 0 
-                THEN CAST(ats.total_wins AS FLOAT) / ats.total_matches * 100
+                THEN ROUND(CAST(ats.total_wins AS FLOAT) / ats.total_matches * 100, 1)
                 ELSE 0 
             END as win_percentage,
             COALESCE(ats.total_points, 0) as total_points
@@ -92,11 +95,14 @@ async function getAllTimeStats(db, limit) {
         ORDER BY COALESCE(ats.total_points, 0) DESC, COALESCE(ats.total_goals, 0) DESC
     `;
     
+    const params = [];
+    
     if (limit) {
-        query += ` LIMIT ${parseInt(limit)}`;
+        query += ` LIMIT $1`;
+        params.push(parseInt(limit));
     }
     
-    const stats = await db.query(query);
+    const stats = await sql(query, params);
     
     return {
         statusCode: 200,
