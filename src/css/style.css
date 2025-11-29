@@ -178,7 +178,7 @@ body {
 
 .table-row {
   display: grid;
-  grid-template-columns: 50px 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 50px 2fr 1.5fr 1fr 1fr 1fr 1fr 80px;
   padding: 1rem;
   border-bottom: 1px solid #333;
   align-items: center;
@@ -198,10 +198,12 @@ body {
 .points {
   background: var(--accent-green);
   color: var(--primary-bg);
-  padding: 0.5rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 6px;
   font-weight: bold;
   text-align: center;
+  display: inline-block;
+  min-width: fit-content;
 }
 
 .player-info {
@@ -459,6 +461,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .match-players {
@@ -576,18 +580,22 @@ body {
     gap: 0.5rem;
     font-size: 0.9rem;
     padding: 1rem 0.75rem;
+    display: flex;
+    flex-direction: column;
   }
 
   .table-header {
     display: none;
   }
 
-  .table-body .table-row::before {
+  .table-row > div::before {
     content: attr(data-label);
     font-weight: bold;
     color: var(--accent-green);
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
   }
 
   .tournaments-grid {
@@ -639,7 +647,8 @@ body {
   }
 
   .table-row {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 0.25rem;
     padding: 0.75rem 0.5rem;
     font-size: 0.85rem;
@@ -692,6 +701,86 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
+  }
+
+  /* Mobile Match Cards */
+  .match-card {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: center;
+    padding: 0.75rem;
+  }
+
+  .match-players {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+    flex: 1 !important;
+    order: 2;
+  }
+
+  .match-players span {
+    display: block;
+    font-size: 0.85rem;
+  }
+
+  .match-score {
+    order: 1;
+    width: 100%;
+    margin: 0 !important;
+    font-size: 1.3rem;
+  }
+
+  .match-result {
+    order: 3;
+    width: 100%;
+  }
+
+  /* Remaining matches section */
+  .remaining-match-group {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .remaining-match-player {
+    font-size: 0.9rem;
+    gap: 0.5rem;
+  }
+
+  .remaining-match-list {
+    margin-left: 1rem;
+    padding-left: 0.5rem;
+  }
+
+  .remaining-match-item {
+    font-size: 0.85rem;
+    padding: 0.25rem 0;
+  }
+
+  /* Match tabs */
+  .matches-tabs {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .tab-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .leaderboard-section,
+  .matches-section {
+    margin-top: 1rem;
+  }
+
+  .tournament-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .tournament-actions button {
+    width: 100%;
   }
 }
 

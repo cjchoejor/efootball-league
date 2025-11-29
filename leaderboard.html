@@ -87,20 +87,20 @@
                 }
 
                 container.innerHTML = stats.map((player, index) => `
-                    <div class="table-row ${index < 3 ? 'top-three' : ''}">
-                        <div class="rank">${index + 1}</div>
-                        <div class="player-info">
+                    <div class="table-row ${index < 3 ? 'top-three' : ''}" data-label="Rank | Player | Team | Tournaments | Wins | Matches | Goals | Win % | Points">
+                        <div class="rank" data-label="Rank">${index + 1}</div>
+                        <div class="player-info" data-label="Player">
                             <img src="${player.photo_url || 'src/images/default-avatar.jpg'}" 
                                  alt="${player.name}" class="player-avatar">
                             <span>${player.name}</span>
                         </div>
-                        <div>${player.team_name}</div>
-                        <div>${player.tournaments_played || 0}</div>
-                        <div>${player.tournaments_won || 0}</div>
-                        <div>${player.total_matches || 0}</div>
-                        <div>${player.total_goals || 0}</div>
-                        <div>${player.win_percentage ? player.win_percentage.toFixed(1) + '%' : '0%'}</div>
-                        <div class="points">${player.total_points || 0}</div>
+                        <div data-label="Team">${player.team_name}</div>
+                        <div data-label="Tournaments">${player.tournaments_played || 0}</div>
+                        <div data-label="Wins">${player.tournaments_won || 0}</div>
+                        <div data-label="Matches">${player.total_matches || 0}</div>
+                        <div data-label="Goals">${player.total_goals || 0}</div>
+                        <div data-label="Win %">${player.win_percentage ? player.win_percentage.toFixed(1) + '%' : '0%'}</div>
+                        <div class="points" data-label="Points">${player.total_points || 0}</div>
                     </div>
                 `).join('');
             }

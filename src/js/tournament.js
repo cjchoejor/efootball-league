@@ -408,7 +408,7 @@ class TournamentManager {
   async loadRecentMatches(tournamentId) {
     try {
       const response = await fetch(
-        `${this.baseUrl}/get-matches?tournament_id=${tournamentId}&status=completed&limit=3`
+        `${this.baseUrl}/get-matches?tournament_id=${tournamentId}&status=completed`
       );
       let matches = await response.json();
       
@@ -424,7 +424,11 @@ class TournamentManager {
         return;
       }
 
-      container.innerHTML = matches
+      // Show only first 3 matches initially
+      const displayMatches = matches.slice(0, 3);
+      const hasMore = matches.length > 3;
+
+      let html = displayMatches
         .map((match) => {
           const isWin =
             match.goals_a > match.goals_b
@@ -440,18 +444,71 @@ class TournamentManager {
                 : "Draw";
 
           return `
-                <div class="match-card">
-                    <div class="match-players">
-                        <span>${match.player_a_name} (${match.team_a})</span>
-                        <span>vs</span>
-                        <span>${match.player_b_name} (${match.team_b})</span>
+                <div class="match-card" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="match-players" style="flex: 1;">
+                        <span><strong>${match.player_a_name}</strong> (${match.team_a})</span>
+                        <span style="text-align: center; color: var(--text-secondary);">vs</span>
+                        <span><strong>${match.player_b_name}</strong> (${match.team_b})</span>
                     </div>
-                    <div class="match-score">${match.goals_a} - ${match.goals_b}</div>
-                    <div class="match-result">${winner}</div>
+                    <div class="match-score" style="margin: 0 1rem;">${match.goals_a} - ${match.goals_b}</div>
+                    <div class="match-result" style="min-width: 80px; text-align: right;">${winner}</div>
                 </div>
             `;
         })
         .join("");
+
+      // Add view more button if there are more matches
+      if (hasMore) {
+        html += `
+          <div id="allMatchesContainer" style="display: none;">
+            ${matches.slice(3)
+              .map((match) => {
+                const isWin =
+                  match.goals_a > match.goals_b
+                    ? "Won"
+                    : match.goals_a < match.goals_b
+                      ? "Lost"
+                      : "Draw";
+                const winner =
+                  match.goals_a > match.goals_b
+                    ? match.player_a_name
+                    : match.goals_a < match.goals_b
+                      ? match.player_b_name
+                      : "Draw";
+
+                return `
+                      <div class="match-card" style="display: flex; justify-content: space-between; align-items: center;">
+                          <div class="match-players" style="flex: 1;">
+                              <span><strong>${match.player_a_name}</strong> (${match.team_a})</span>
+                              <span style="text-align: center; color: var(--text-secondary);">vs</span>
+                              <span><strong>${match.player_b_name}</strong> (${match.team_b})</span>
+                          </div>
+                          <div class="match-score" style="margin: 0 1rem;">${match.goals_a} - ${match.goals_b}</div>
+                          <div class="match-result" style="min-width: 80px; text-align: right;">${winner}</div>
+                      </div>
+                  `;
+              })
+              .join("")}
+          </div>
+          <button id="viewMoreBtn" class="btn-secondary" style="margin-top: 1rem; width: 100%;">
+            View More Matches
+          </button>
+        `;
+      }
+
+      container.innerHTML = html;
+
+      // Setup view more button
+      if (hasMore) {
+        const viewMoreBtn = document.getElementById("viewMoreBtn");
+        const allMatchesContainer = document.getElementById("allMatchesContainer");
+        if (viewMoreBtn && allMatchesContainer) {
+          viewMoreBtn.addEventListener("click", () => {
+            allMatchesContainer.style.display = "block";
+            viewMoreBtn.style.display = "none";
+          });
+        }
+      }
     } catch (error) {
       console.error("Error loading recent matches:", error);
     }
@@ -686,7 +743,7 @@ class TournamentManager {
         return;
       }
 
-      // Find the actual match in the database by player IDs, not by trying to guess the ID
+      // Submit the match result with correct goal assignment
       const response = await fetch(`${this.baseUrl}/update-match`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -694,8 +751,8 @@ class TournamentManager {
           tournamentId: tournamentId,
           playerAId: playerAId,
           playerBId: playerBId,
-          goalsA: goalsA,
-          goalsB: goalsB,
+          goalsA: parseInt(goalsA),
+          goalsB: parseInt(goalsB),
         }),
       });
 

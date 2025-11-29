@@ -115,18 +115,18 @@ class FootballLeague {
             </div>
             <div class="table-body">
                 ${stats.map((player, index) => `
-                    <div class="table-row">
-                        <div>${index + 1}</div>
-                        <div class="player-info">
+                    <div class="table-row" data-label="Rank | Player | Team | Matches | Wins | Goals | Points">
+                        <div data-label="Rank">${index + 1}</div>
+                        <div class="player-info" data-label="Player">
                             <img src="${player.photo_url || 'src/images/default-avatar.jpg'}" 
                                  alt="${player.name}" class="player-avatar">
                             <span>${player.name}</span>
                         </div>
-                        <div>${player.team_name}</div>
-                        <div>${player.total_matches || 0}</div>
-                        <div>${player.total_wins || 0}</div>
-                        <div>${player.total_goals || 0}</div>
-                        <div class="points">${player.total_points || 0}</div>
+                        <div data-label="Team">${player.team_name}</div>
+                        <div data-label="Matches">${player.total_matches || 0}</div>
+                        <div data-label="Wins">${player.total_wins || 0}</div>
+                        <div data-label="Goals">${player.total_goals || 0}</div>
+                        <div class="points" data-label="Points">${player.total_points || 0}</div>
                     </div>
                 `).join('')}
             </div>
