@@ -266,7 +266,13 @@ class TournamentManager {
       const tourResponse = await fetch(
         `${this.baseUrl}/get-tournaments?id=${tournamentId}`
       );
-      const tournaments = await tourResponse.json();
+      let tournaments = await tourResponse.json();
+      
+      // Handle wrapped response if needed
+      if (tournaments && tournaments.body && typeof tournaments.body === "string") {
+        tournaments = JSON.parse(tournaments.body);
+      }
+      
       const tournament = tournaments[0];
 
       if (!tournament) {
@@ -280,7 +286,17 @@ class TournamentManager {
       const statsResponse = await fetch(
         `${this.baseUrl}/get-stats?type=tournament&tournament_id=${tournamentId}`
       );
-      const stats = await statsResponse.json();
+      let stats = await statsResponse.json();
+      console.log("Stats raw response:", stats);
+      
+      // Handle wrapped response if needed
+      if (stats && stats.body && typeof stats.body === "string") {
+        stats = JSON.parse(stats.body);
+      }
+      
+      console.log("Stats loaded:", stats);
+      console.log("Stats type:", typeof stats);
+      console.log("Stats is array:", Array.isArray(stats));
       this.renderTournamentLeaderboard(stats);
 
       // Load upcoming matches for this pair
@@ -353,7 +369,12 @@ class TournamentManager {
       const response = await fetch(
         `${this.baseUrl}/get-matches?tournament_id=${tournamentId}&status=scheduled&limit=5`
       );
-      const matches = await response.json();
+      let matches = await response.json();
+      
+      // Handle wrapped response if needed
+      if (matches && matches.body && typeof matches.body === "string") {
+        matches = JSON.parse(matches.body);
+      }
 
       const container = document.getElementById("recentMatches");
 
