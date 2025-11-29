@@ -1,4 +1,4 @@
-const { db } = require('@netlify/functions');
+const { NetlifyDB } = require('@netlify/functions');
 
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
@@ -6,14 +6,15 @@ exports.handler = async (event) => {
     }
 
     try {
+        const db = new NetlifyDB();
         const { players, matchesPerPlayer } = JSON.parse(event.body);
         
         // Get tournament count for naming
-        const { data: tournaments } = await db.query(
+        const countResult = await db.query(
             'SELECT COUNT(*) as count FROM tournaments'
         );
         
-        const tournamentName = `WEEK ${tournaments[0].count + 1}`;
+        const tournamentName = `WEEK ${countResult[0].count + 1}`;
         const tournamentId = `tournament_${Date.now()}`;
         
         // Create tournament
@@ -36,13 +37,14 @@ exports.handler = async (event) => {
         }
         
         // Generate fixtures
-        await generateFixtures(tournamentId, players, matchesPerPlayer);
+        await generateFixtures(db, tournamentId, players, matchesPerPlayer);
         
         return {
             statusCode: 200,
             body: JSON.stringify({ tournamentId, name: tournamentName })
         };
     } catch (error) {
+        console.error('Error:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: error.message })
@@ -50,8 +52,7 @@ exports.handler = async (event) => {
     }
 };
 
-async function generateFixtures(tournamentId, players, matchesPerPlayer) {
-    const { db } = require('@netlify/functions');
+async function generateFixtures(db, tournamentId, players, matchesPerPlayer) {
     const matchesPerPair = calculateMatchesPerPair(players.length, matchesPerPlayer);
     
     // Initialize tournament stats for each player

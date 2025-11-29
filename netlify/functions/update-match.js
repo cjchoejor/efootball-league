@@ -1,6 +1,6 @@
-const { db } = require('@netlify/functions');
+const { NetlifyDB } = require('@netlify/functions');
 
-async function updateTournamentStats(tournamentId, playerId, goalsFor, goalsAgainst, isWin, isDraw) {
+async function updateTournamentStats(db, tournamentId, playerId, goalsFor, goalsAgainst, isWin, isDraw) {
     const points = isWin ? 3 : isDraw ? 1 : 0;
     
     await db.query(`
@@ -25,7 +25,7 @@ async function updateTournamentStats(tournamentId, playerId, goalsFor, goalsAgai
     ]);
 }
 
-async function updateAllTimeStats(playerId, goalsFor, goalsAgainst, isWin, isDraw, teamName) {
+async function updateAllTimeStats(db, playerId, goalsFor, goalsAgainst, isWin, isDraw, teamName) {
     const points = isWin ? 3 : isDraw ? 1 : 0;
     
     // Update or insert all-time stats
@@ -57,12 +57,45 @@ async function updateAllTimeStats(playerId, goalsFor, goalsAgainst, isWin, isDra
     }
 }
 
+async function checkAndCompleteTournament(db, tournamentId) {
+    // Count remaining scheduled matches
+    const remaining = await db.query(
+        'SELECT COUNT(*) as count FROM matches WHERE tournament_id = ? AND status = ?',
+        [tournamentId, 'scheduled']
+    );
+    
+    if (remaining[0].count === 0) {
+        // All matches completed, mark tournament as completed
+        await db.query(
+            'UPDATE tournaments SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
+            ['completed', tournamentId]
+        );
+        
+        // Update tournament won count for players with highest points
+        const leaderboard = await db.query(`
+            SELECT player_id, points FROM tournament_stats 
+            WHERE tournament_id = ? 
+            ORDER BY points DESC 
+            LIMIT 1
+        `, [tournamentId]);
+        
+        if (leaderboard.length > 0) {
+            const winnerId = leaderboard[0].player_id;
+            await db.query(
+                'UPDATE all_time_stats SET tournaments_won = tournaments_won + 1 WHERE player_id = ?',
+                [winnerId]
+            );
+        }
+    }
+}
+
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
     try {
+        const db = new NetlifyDB();
         const { matchId, goalsA, goalsB } = JSON.parse(event.body);
         
         // Update match
@@ -72,7 +105,7 @@ exports.handler = async (event) => {
         );
         
         // Get match details for stats update
-        const { data: match } = await db.query(`
+        const match = await db.query(`
             SELECT m.tournament_id, m.player_a_id, m.player_b_id, 
                    pa.team_name as team_a, pb.team_name as team_b
             FROM matches m
@@ -89,15 +122,15 @@ exports.handler = async (event) => {
             const isWinB = goalsB > goalsA;
             
             // Update tournament stats for both players
-            await updateTournamentStats(tournament_id, player_a_id, goalsA, goalsB, isWinA, isDraw);
-            await updateTournamentStats(tournament_id, player_b_id, goalsB, goalsA, isWinB, isDraw);
+            await updateTournamentStats(db, tournament_id, player_a_id, goalsA, goalsB, isWinA, isDraw);
+            await updateTournamentStats(db, tournament_id, player_b_id, goalsB, goalsA, isWinB, isDraw);
             
             // Update all-time stats for both players
-            await updateAllTimeStats(player_a_id, goalsA, goalsB, isWinA, isDraw, team_a);
-            await updateAllTimeStats(player_b_id, goalsB, goalsA, isWinB, isDraw, team_b);
+            await updateAllTimeStats(db, player_a_id, goalsA, goalsB, isWinA, isDraw, team_a);
+            await updateAllTimeStats(db, player_b_id, goalsB, goalsA, isWinB, isDraw, team_b);
             
             // Check if tournament is complete
-            await checkAndCompleteTournament(tournament_id);
+            await checkAndCompleteTournament(db, tournament_id);
         }
         
         return {
@@ -112,35 +145,3 @@ exports.handler = async (event) => {
         };
     }
 };
-
-async function checkAndCompleteTournament(tournamentId) {
-    // Count remaining scheduled matches
-    const { data: remaining } = await db.query(
-        'SELECT COUNT(*) as count FROM matches WHERE tournament_id = ? AND status = ?',
-        [tournamentId, 'scheduled']
-    );
-    
-    if (remaining[0].count === 0) {
-        // All matches completed, mark tournament as completed
-        await db.query(
-            'UPDATE tournaments SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
-            ['completed', tournamentId]
-        );
-        
-        // Update tournament won count for players with highest points
-        const { data: leaderboard } = await db.query(`
-            SELECT player_id, points FROM tournament_stats 
-            WHERE tournament_id = ? 
-            ORDER BY points DESC 
-            LIMIT 1
-        `, [tournamentId]);
-        
-        if (leaderboard.length > 0) {
-            const winnerId = leaderboard[0].player_id;
-            await db.query(
-                'UPDATE all_time_stats SET tournaments_won = tournaments_won + 1 WHERE player_id = ?',
-                [winnerId]
-            );
-        }
-    }
-}

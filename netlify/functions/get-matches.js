@@ -1,9 +1,11 @@
-const { db } = require('@netlify/functions');
+const { NetlifyDB } = require('@netlify/functions');
 
 exports.handler = async (event) => {
     const { tournament_id, status, limit } = event.queryStringParameters || {};
     
     try {
+        const db = new NetlifyDB();
+        
         let query = `
             SELECT 
                 m.id,
@@ -42,7 +44,7 @@ exports.handler = async (event) => {
             query += ` LIMIT ${parseInt(limit)}`;
         }
         
-        const { data: matches } = await db.query(query, params);
+        const matches = await db.query(query, params);
         
         return {
             statusCode: 200,

@@ -1,9 +1,11 @@
-const { db } = require('@netlify/functions');
+const { NetlifyDB } = require('@netlify/functions');
 
 exports.handler = async (event) => {
     const { id, status, limit } = event.queryStringParameters || {};
     
     try {
+        const db = new NetlifyDB();
+        
         let query = `
             SELECT t.*, 
                    COUNT(DISTINCT tp.player_id) as player_count,
@@ -36,7 +38,7 @@ exports.handler = async (event) => {
             params.push(parseInt(limit));
         }
         
-        const { data: tournaments } = await db.query(query, params);
+        const tournaments = await db.query(query, params);
         
         return {
             statusCode: 200,

@@ -1,15 +1,15 @@
-const { db } = require('@netlify/functions');
+const { NetlifyDB } = require('@netlify/functions');
 
 exports.handler = async (event) => {
     const { type, tournament_id, limit } = event.queryStringParameters || {};
     
     try {
+        const db = new NetlifyDB();
+        
         if (type === 'tournament') {
-            // Get stats for a specific tournament
-            return await getTournamentStats(tournament_id, limit);
+            return await getTournamentStats(db, tournament_id, limit);
         } else if (type === 'all-time') {
-            // Get all-time leaderboard
-            return await getAllTimeStats(limit);
+            return await getAllTimeStats(db, limit);
         } else {
             return {
                 statusCode: 400,
@@ -25,9 +25,7 @@ exports.handler = async (event) => {
     }
 };
 
-async function getTournamentStats(tournamentId, limit) {
-    const { db } = require('@netlify/functions');
-    
+async function getTournamentStats(db, tournamentId, limit) {
     let query = `
         SELECT 
             p.id,
@@ -58,7 +56,7 @@ async function getTournamentStats(tournamentId, limit) {
         query += ` LIMIT ${parseInt(limit)}`;
     }
     
-    const { data: stats } = await db.query(query, [tournamentId, tournamentId]);
+    const stats = await db.query(query, [tournamentId, tournamentId]);
     
     return {
         statusCode: 200,
@@ -66,9 +64,7 @@ async function getTournamentStats(tournamentId, limit) {
     };
 }
 
-async function getAllTimeStats(limit) {
-    const { db } = require('@netlify/functions');
-    
+async function getAllTimeStats(db, limit) {
     let query = `
         SELECT 
             p.id,
@@ -100,7 +96,7 @@ async function getAllTimeStats(limit) {
         query += ` LIMIT ${parseInt(limit)}`;
     }
     
-    const { data: stats } = await db.query(query);
+    const stats = await db.query(query);
     
     return {
         statusCode: 200,
