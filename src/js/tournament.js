@@ -560,15 +560,14 @@ class TournamentManager {
         return;
       }
 
-      // Create match ID following the same pattern as fixture generation
-      // Try the primary direction first
-      const matchId1 = `match_${tournamentId}_${playerAId}_${playerBId}_0`;
-
+      // Find the actual match in the database by player IDs, not by trying to guess the ID
       const response = await fetch(`${this.baseUrl}/update-match`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          matchId: matchId1,
+          tournamentId: tournamentId,
+          playerAId: playerAId,
+          playerBId: playerBId,
           goalsA: goalsA,
           goalsB: goalsB,
         }),

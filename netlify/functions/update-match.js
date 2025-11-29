@@ -104,23 +104,47 @@ exports.handler = async (event) => {
 
     try {
         const sql = neon();
-        const { matchId, goalsA, goalsB } = JSON.parse(event.body);
+        const { tournamentId, playerAId, playerBId, goalsA, goalsB } = JSON.parse(event.body);
         
-        // Update match
+        console.log('Update match request:', { tournamentId, playerAId, playerBId, goalsA, goalsB });
+        
+        // Find first scheduled match between these two players in this tournament
+        const matchQuery = `
+            SELECT m.id, m.tournament_id, m.player_a_id, m.player_b_id, 
+                   pa.team_name as team_a, pb.team_name as team_b
+            FROM matches m
+            JOIN players pa ON m.player_a_id = pa.id
+            JOIN players pb ON m.player_b_id = pb.id
+            WHERE m.tournament_id = $1 
+              AND m.status = 'scheduled'
+              AND ((m.player_a_id = $2 AND m.player_b_id = $3) 
+                   OR (m.player_a_id = $3 AND m.player_b_id = $2))
+            LIMIT 1
+        `;
+        
+        const matches = await sql(matchQuery, [tournamentId, playerAId, playerBId]);
+        
+        if (!matches || matches.length === 0) {
+            console.error('No scheduled match found for players:', playerAId, playerBId);
+            return {
+                statusCode: 404,
+                body: JSON.stringify({ error: 'No scheduled match found between these players' })
+            };
+        }
+        
+        const matchId = matches[0].id;
+        console.log('Found match ID:', matchId);
+        
+        // Update match with goals
         await sql(
             'UPDATE matches SET goals_a = $1, goals_b = $2, status = $3 WHERE id = $4',
             [goalsA, goalsB, 'completed', matchId]
         );
         
+        console.log('Match updated:', matchId);
+        
         // Get match details for stats update
-        const match = await sql(`
-            SELECT m.tournament_id, m.player_a_id, m.player_b_id, 
-                   pa.team_name as team_a, pb.team_name as team_b
-            FROM matches m
-            JOIN players pa ON m.player_a_id = pa.id
-            JOIN players pb ON m.player_b_id = pb.id
-            WHERE m.id = $1
-        `, [matchId]);
+        const match = matches;
         
         if (match.length > 0) {
             const { tournament_id, player_a_id, player_b_id, team_a, team_b } = match[0];
