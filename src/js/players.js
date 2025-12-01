@@ -11,6 +11,19 @@ class PlayerManager {
         this.loadPlayers();
     }
 
+    toggleAddPlayerForm() {
+        const form = document.getElementById('addPlayerForm');
+        const toggle = document.getElementById('addPlayerToggle');
+        
+        if (form.style.display === 'none' || form.style.display === '') {
+            form.style.display = 'block';
+            toggle.classList.add('open');
+        } else {
+            form.style.display = 'none';
+            toggle.classList.remove('open');
+        }
+    }
+
     setupEventListeners() {
         // Add player form submission
         const addPlayerForm = document.getElementById('addPlayerForm');
@@ -143,6 +156,11 @@ class PlayerManager {
             if (response.ok) {
                 Utils.showNotification('Player added successfully!', 'success');
                 document.getElementById('addPlayerForm').reset();
+                // Collapse the form after successful add
+                const form = document.getElementById('addPlayerForm');
+                const toggle = document.getElementById('addPlayerToggle');
+                form.style.display = 'none';
+                toggle.classList.remove('open');
                 await this.loadPlayers();
             } else {
                 Utils.showNotification('Error: ' + (result.error || 'Failed to add player'), 'error');
@@ -208,6 +226,8 @@ class PlayerManager {
             if (response.ok) {
                 Utils.showNotification('Player updated successfully!', 'success');
                 document.getElementById('editPlayerModal').style.display = 'none';
+                // Reset form for next use
+                document.getElementById('editPlayerForm').reset();
                 await this.loadPlayers();
             } else {
                 Utils.showNotification('Error: ' + (result.error || 'Failed to update player'), 'error');

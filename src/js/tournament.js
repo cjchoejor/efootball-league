@@ -19,7 +19,7 @@ class TournamentManager {
     const addPlayerBtn = document.getElementById("addPlayerBtn");
     if (addPlayerBtn) {
       addPlayerBtn.addEventListener("click", () => {
-        this.addPlayerForm();
+        this.addPlayerDropdown();
       });
     }
 
