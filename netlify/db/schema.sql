@@ -78,5 +78,7 @@ CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
 CREATE INDEX IF NOT EXISTS idx_tournaments_created_at ON tournaments(created_at);
 CREATE INDEX IF NOT EXISTS idx_matches_tournament_id ON matches(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
+CREATE INDEX IF NOT EXISTS idx_matches_tournament_status_players ON matches(tournament_id, status, player_a_id, player_b_id);
 CREATE INDEX IF NOT EXISTS idx_tournament_stats_tournament ON tournament_stats(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_all_time_stats_points ON all_time_stats(total_points);
+CREATE INDEX IF NOT EXISTS idx_players_id ON players(id);

@@ -118,58 +118,60 @@ class PlayerManager {
     }
 
     async handleAddPlayer() {
-        const name = document.getElementById('playerName').value;
-        const teamName = document.getElementById('teamName').value;
-        const accountNumber = document.getElementById('accountNumber').value;
-        const photoFile = document.getElementById('playerPhoto');
+         const name = document.getElementById('playerName').value;
+         const teamName = document.getElementById('teamName').value;
+         const accountNumber = document.getElementById('accountNumber').value;
+         const photoFile = document.getElementById('playerPhoto');
 
-        if (!name || !teamName || !accountNumber) {
-            Utils.showNotification('Please fill in all required fields', 'error');
-            return;
-        }
+         if (!name || !teamName || !accountNumber) {
+             Utils.showNotification('Please fill in all required fields', 'error');
+             return;
+         }
 
-        try {
-            let photoUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80';
+         try {
+             let photoUrl = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80';
 
-            // Convert photo to base64 if provided
-            if (photoFile && photoFile.files && photoFile.files[0]) {
-                try {
-                    photoUrl = await this.fileToBase64(photoFile.files[0]);
-                } catch (error) {
-                    console.error('Error converting image:', error);
-                }
-            }
+             // Convert photo to base64 if provided
+             if (photoFile && photoFile.files && photoFile.files[0]) {
+                 try {
+                     photoUrl = await this.fileToBase64(photoFile.files[0]);
+                 } catch (error) {
+                     console.error('Error converting image:', error);
+                 }
+             }
 
-            const response = await fetch(`${this.baseUrl}/add-player`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name,
-                    teamName,
-                    accountNumber,
-                    photoUrl
-                })
-            });
+             const response = await fetch(`${this.baseUrl}/add-player`, {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({
+                     name,
+                     teamName,
+                     accountNumber,
+                     photoUrl
+                 })
+             });
 
-            const result = await response.json();
+             const result = await response.json();
 
-            if (response.ok) {
-                Utils.showNotification('Player added successfully!', 'success');
-                document.getElementById('addPlayerForm').reset();
-                // Collapse the form after successful add
-                const form = document.getElementById('addPlayerForm');
-                const toggle = document.getElementById('addPlayerToggle');
-                form.style.display = 'none';
-                toggle.classList.remove('open');
-                await this.loadPlayers();
-            } else {
-                Utils.showNotification('Error: ' + (result.error || 'Failed to add player'), 'error');
-            }
-        } catch (error) {
-            console.error('Error adding player:', error);
-            Utils.showNotification('Error: ' + error.message, 'error');
-        }
-    }
+             if (response.ok) {
+                 Utils.showNotification('Player added successfully!', 'success');
+                 document.getElementById('addPlayerForm').reset();
+                 // Collapse the form after successful add
+                 const form = document.getElementById('addPlayerForm');
+                 const toggle = document.getElementById('addPlayerToggle');
+                 form.style.display = 'none';
+                 toggle.classList.remove('open');
+                 // Invalidate player cache
+                 localStorage.removeItem('tournament_players_cache');
+                 await this.loadPlayers();
+             } else {
+                 Utils.showNotification('Error: ' + (result.error || 'Failed to add player'), 'error');
+             }
+         } catch (error) {
+             console.error('Error adding player:', error);
+             Utils.showNotification('Error: ' + error.message, 'error');
+         }
+     }
 
     openEditModal(playerId) {
         const player = this.players.find(p => p.id === playerId);
@@ -228,6 +230,8 @@ class PlayerManager {
                 document.getElementById('editPlayerModal').style.display = 'none';
                 // Reset form for next use
                 document.getElementById('editPlayerForm').reset();
+                // Invalidate player cache
+                localStorage.removeItem('tournament_players_cache');
                 await this.loadPlayers();
             } else {
                 Utils.showNotification('Error: ' + (result.error || 'Failed to update player'), 'error');
@@ -256,6 +260,8 @@ class PlayerManager {
             if (response.ok) {
                 Utils.showNotification('Player deleted successfully!', 'success');
                 document.getElementById('editPlayerModal').style.display = 'none';
+                // Invalidate player cache
+                localStorage.removeItem('tournament_players_cache');
                 await this.loadPlayers();
             } else {
                 Utils.showNotification('Error: ' + (result.error || 'Failed to delete player'), 'error');

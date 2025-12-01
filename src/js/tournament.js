@@ -5,6 +5,8 @@ class TournamentManager {
     this.allAvailablePlayers = [];
     this.minPlayers = 3;
     this.baseUrl = "/.netlify/functions";
+    this.playersCacheKey = 'tournament_players_cache';
+    this.playersCacheTTL = 5 * 60 * 1000; // 5 minutes
     this.init();
   }
 
@@ -80,13 +82,53 @@ class TournamentManager {
 
   async loadAvailablePlayers() {
     try {
+      // Check cache first
+      const cached = this.getPlayersFromCache();
+      if (cached) {
+        this.allAvailablePlayers = cached;
+        this.addPlayerDropdown();
+        return;
+      }
+
       const response = await fetch(`${this.baseUrl}/get-players`);
       this.allAvailablePlayers = await response.json();
+      
+      // Store in cache
+      this.setPlayersInCache(this.allAvailablePlayers);
+      
       // Add first player dropdown
       this.addPlayerDropdown();
     } catch (error) {
       console.error('Error loading players:', error);
       Utils.showNotification('Error loading players. Make sure to create players first!', 'error');
+    }
+  }
+
+  getPlayersFromCache() {
+    try {
+      const cached = localStorage.getItem(this.playersCacheKey);
+      if (!cached) return null;
+      
+      const { data, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp > this.playersCacheTTL) {
+        localStorage.removeItem(this.playersCacheKey);
+        return null;
+      }
+      
+      return data;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  setPlayersInCache(players) {
+    try {
+      localStorage.setItem(this.playersCacheKey, JSON.stringify({
+        data: players,
+        timestamp: Date.now()
+      }));
+    } catch (error) {
+      console.warn('Failed to cache players:', error);
     }
   }
 
@@ -389,87 +431,117 @@ class TournamentManager {
   }
 
   renderTournamentLeaderboard(stats) {
-    const container = document.getElementById("tournamentLeaderboard");
+     const container = document.getElementById("tournamentLeaderboard");
 
-    if (!stats || stats.length === 0) {
-      container.innerHTML = "<p>No leaderboard data available</p>";
-      return;
-    }
+     if (!stats || stats.length === 0) {
+       container.innerHTML = "<p>No leaderboard data available</p>";
+       return;
+     }
 
-    const tableHtml = `
-            <div class="leaderboard-table">
-                <div class="table-header">
-                    <div class="table-row">
-                        <div>Player</div>
-                        <div>Team</div>
-                        <div>P</div>
-                        <div>W</div>
-                        <div>D</div>
-                        <div>L</div>
-                        <div>GF</div>
-                        <div>GA</div>
-                        <div>Pts</div>
-                    </div>
-                </div>
-                <div class="table-body">
-                    ${stats
-                      .map(
-                        (player, idx) => `
-                        <div class="table-row">
-                            <div class="player-info">
-                                <img src="${
-                                  player.photo_url ||
-                                  "src/images/default-avatar.jpg"
-                                }" 
-                                     alt="${player.name}" class="player-avatar">
-                                <span>${player.name}</span>
-                            </div>
-                            <div>${player.team_name}</div>
-                            <div>${player.games_played}</div>
-                            <div>${player.wins}</div>
-                            <div>${player.draws}</div>
-                            <div>${player.losses}</div>
-                            <div>${player.goals_scored}</div>
-                            <div>${player.goals_conceded}</div>
-                            <div class="points">${player.points}</div>
-                        </div>
-                    `
-                      )
-                      .join("")}
-                </div>
-            </div>
-        `;
+     // Generate team colors based on team name hash
+     const getTeamColor = (teamName) => {
+       const colors = ['#00ff88', '#0099ff', '#8a2be2', '#ff6b9d', '#ffa500', '#00d4ff', '#ff3366', '#00ff99'];
+       let hash = 0;
+       for (let i = 0; i < teamName.length; i++) {
+         hash = teamName.charCodeAt(i) + ((hash << 5) - hash);
+       }
+       return colors[Math.abs(hash) % colors.length];
+     };
 
-    container.innerHTML = tableHtml;
-  }
+     const tableHtml = `
+             <div class="leaderboard-table">
+                 <div class="table-header">
+                     <div class="table-row">
+                         <div>Player</div>
+                         <div>Team</div>
+                         <div>P</div>
+                         <div>W</div>
+                         <div>D</div>
+                         <div>L</div>
+                         <div>GF</div>
+                         <div>GA</div>
+                         <div>Pts</div>
+                     </div>
+                 </div>
+                 <div class="table-body">
+                     ${stats
+                       .map(
+                         (player, idx) => {
+                           const teamColor = getTeamColor(player.team_name);
+                           return `
+                         <div class="table-row">
+                             <div class="player-info">
+                                 <img src="${
+                                   player.photo_url ||
+                                   "src/images/default-avatar.jpg"
+                                 }" 
+                                      alt="${player.name}" class="player-avatar">
+                                 <span>${player.name}</span>
+                             </div>
+                             <div class="team-badge" style="background-color: ${teamColor}; color: #000; padding: 0.3rem 0.6rem; border-radius: 4px; font-weight: bold; font-size: 0.85rem;">${player.team_name}</div>
+                             <div>${player.games_played}</div>
+                             <div>${player.wins}</div>
+                             <div>${player.draws}</div>
+                             <div>${player.losses}</div>
+                             <div>${player.goals_scored}</div>
+                             <div>${player.goals_conceded}</div>
+                             <div class="points">${player.points}</div>
+                         </div>
+                     `;
+                         }
+                       )
+                       .join("")}
+                 </div>
+             </div>
+         `;
+
+     container.innerHTML = tableHtml;
+   }
 
   async loadMatchesForTournament(tournamentId) {
     try {
       const response = await fetch(
-        `${this.baseUrl}/get-matches?tournament_id=${tournamentId}&status=scheduled&limit=5`
+        `${this.baseUrl}/get-matches?tournament_id=${tournamentId}&status=scheduled&limit=10`
       );
       const matches = await response.json();
 
-      const container = document.getElementById("recentMatches");
-
-      if (!matches || matches.length === 0) {
-        container.innerHTML = "<p>No scheduled matches</p>";
+      const container = document.getElementById("remainingMatches");
+      if (!container) {
+        console.warn("remainingMatches container not found");
         return;
       }
 
-      container.innerHTML = matches
-        .map(
-          (match) => `
-                <div class="match-card">
-                    <div class="match-players">
-                        <span>${match.player_a_name}</span>
-                        <span>vs</span>
-                        <span>${match.player_b_name}</span>
+      if (!matches || matches.length === 0) {
+        container.innerHTML = "<p>No scheduled matches remaining</p>";
+        return;
+      }
+
+      // Group matches by player for better organization
+      const matchesByPlayer = {};
+      matches.forEach(match => {
+        if (!matchesByPlayer[match.player_a_name]) {
+          matchesByPlayer[match.player_a_name] = [];
+        }
+        matchesByPlayer[match.player_a_name].push(match);
+      });
+
+      container.innerHTML = Object.entries(matchesByPlayer)
+        .map(([playerName, playerMatches]) => `
+          <div class="remaining-match-group">
+            <div class="remaining-match-player">${playerName}</div>
+            <div class="remaining-match-list">
+              ${playerMatches
+                .map(
+                  (match) => `
+                    <div class="remaining-match-item">
+                      vs ${match.player_b_name}
                     </div>
-                    <div class="match-status">Scheduled</div>
-                </div>
-            `
-        )
+                  `
+                )
+                .join("")}
+            </div>
+          </div>
+        `)
         .join("");
     } catch (error) {
       console.error("Error loading matches:", error);
@@ -565,15 +637,14 @@ class TournamentManager {
         return;
       }
 
-      // Create match ID following the same pattern as fixture generation
-      // Try the primary direction first
-      const matchId1 = `match_${tournamentId}_${playerAId}_${playerBId}_0`;
-
+      // Send just the tournament and player IDs - backend will find the match
       const response = await fetch(`${this.baseUrl}/update-match`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          matchId: matchId1,
+          tournamentId: tournamentId,
+          playerAId: playerAId,
+          playerBId: playerBId,
           goalsA: goalsA,
           goalsB: goalsB,
         }),
