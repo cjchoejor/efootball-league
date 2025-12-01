@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Players - eFootball League</title>
+    <link rel="stylesheet" href="src/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="image1.jpg" alt="eFootball League Logo" class="nav-logo-img">
+                eFootball League
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="tournament.html" class="nav-link">Tournaments</a>
+                <a href="past-tournaments.html" class="nav-link">Past Tournaments</a>
+                <a href="players.html" class="nav-link active">Players</a>
+                <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h2 class="section-title">Manage Players</h2>
+        
+        <div class="players-management">
+            <!-- Add Player Form Section -->
+            <div class="add-player-section">
+                <h3>Add New Player</h3>
+                <form id="addPlayerForm" class="player-form">
+                    <div class="form-group">
+                        <label class="form-label">Player Name</label>
+                        <input type="text" id="playerName" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Team Name</label>
+                        <input type="text" id="teamName" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Account Number</label>
+                        <input type="text" id="accountNumber" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Photo (Optional)</label>
+                        <input type="file" id="playerPhoto" class="form-input" accept="image/*">
+                        <small style="color: #b0b0b0; display: block; margin-top: 0.3rem;">Square image recommended</small>
+                    </div>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-plus"></i> Add Player
+                    </button>
+                </form>
+            </div>
+
+            <!-- Players List Section -->
+            <div class="players-list-section">
+                <h3>All Players</h3>
+                <div class="players-grid" id="playersGrid">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading players...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Player Modal -->
+        <div id="editPlayerModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Edit Player</h3>
+                <form id="editPlayerForm" class="player-form">
+                    <input type="hidden" id="editPlayerId">
+                    <div class="form-group">
+                        <label class="form-label">Player Name</label>
+                        <input type="text" id="editPlayerName" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Team Name</label>
+                        <input type="text" id="editTeamName" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Account Number</label>
+                        <input type="text" id="editAccountNumber" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Photo (Optional)</label>
+                        <input type="file" id="editPlayerPhoto" class="form-input" accept="image/*">
+                        <small style="color: #b0b0b0; display: block; margin-top: 0.3rem;">Leave empty to keep current photo</small>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn-primary" style="flex: 1;">Save Changes</button>
+                        <button type="button" class="btn-remove" id="deletePlayerBtn" style="flex: 1; background: #ff6666;">
+                            <i class="fas fa-trash"></i> Delete Player
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="src/js/utils.js"></script>
+    <script src="src/js/players.js"></script>
+</body>
+</html>

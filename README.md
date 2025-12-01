@@ -4,12 +4,15 @@ A modern, responsive web application for managing eFootball tournaments with per
 
 ## Features
 
+- **Players Management**: Centralized player database with add/edit/delete functionality
+- **Account Number Integration**: Track players by account number across tournaments
 - **Tournament Management**: Create tournaments with auto-naming (WEEK 1, WEEK 2, etc.)
-- **Player Registration**: Add players with photos, names, and team affiliations
+- **Player Registration**: Select existing players for tournaments instead of creating new ones
 - **Fixture Auto-Generation**: Automatically creates all matches based on player count
 - **Match Tracking**: Record match results with automatic stats calculation
+- **Change Audit Trail**: Full audit history of all player modifications
 - **Live Leaderboards**: Real-time tournament and all-time leaderboards
-- **Persistent Storage**: All data stored in Netlify DB (no data loss)
+- **Persistent Storage**: All data stored in Neon PostgreSQL (no data loss)
 - **Responsive Design**: Fully optimized for desktop, tablet, and mobile (iPhone 16 Pro/Pro Max)
 - **Dark Sporty Theme**: Modern UI with neon green and electric blue accents
 
@@ -30,22 +33,28 @@ efootbal-league/
 │   ├── js/
 │   │   ├── app.js             # Home page logic
 │   │   ├── tournament.js       # Tournament creation and view
+│   │   ├── players.js          # Player management logic
 │   │   └── utils.js           # Utility functions
 │   └── images/                # Placeholder for images
 ├── netlify/
-│   ├── db/
-│   │   └── schema.sql         # Database schema
 │   └── functions/
 │       ├── create-tournament.js    # Tournament creation endpoint
 │       ├── get-tournaments.js      # Fetch tournaments
 │       ├── get-stats.js            # Get leaderboard stats
 │       ├── get-matches.js          # Get matches
-│       └── update-match.js         # Record match results
+│       ├── update-match.js         # Record match results
+│       ├── get-players.js          # Fetch all players
+│       ├── add-player.js           # Create new player
+│       ├── update-player.js        # Update player details
+│       └── delete-player.js        # Delete player
 ├── index.html                 # Home page
 ├── tournament.html            # Tournament create/view
+├── players.html               # Player management
 ├── leaderboard.html           # All-time leaderboard
 ├── past-tournaments.html      # Completed tournaments list
-└── netlify.toml              # Netlify config
+├── netlify.toml              # Netlify config
+├── PLAYERS_FEATURE_IMPLEMENTATION.md  # Detailed players feature guide
+└── PLAYERS_DEPLOYMENT_GUIDE.md        # Deployment instructions
 ```
 
 ## Setup Instructions
@@ -109,8 +118,10 @@ efootbal-league/
 - `id`: Unique player ID
 - `name`: Player name
 - `team_name`: Team affiliation
+- `account_number`: Player account ID (NEW)
 - `photo_url`: Player photo URL
 - `created_at`: Registration timestamp
+- `updated_at`: Last update timestamp (NEW)
 
 ### Tournaments
 - `id`: Tournament ID
@@ -136,20 +147,39 @@ efootbal-league/
 - Aggregate stats across all tournaments
 - Tracks total wins, goals, tournaments won, etc.
 
+### Player Audit (NEW)
+- `id`: Audit record ID
+- `player_id`: Reference to player
+- `action`: CREATE, UPDATE, or DELETE
+- `old_values`: Previous state (JSON)
+- `new_values`: New state (JSON)
+- `changed_at`: Timestamp of change
+
 ## Features Breakdown
 
-### 1. Create Tournament
+### 1. Player Management (NEW)
+- **Players Page**: Dedicated page for managing players
+- **Add Players**: Create players with name, team, account number, photo
+- **Edit Players**: Update any player information
+- **Delete Players**: Remove players (audit trail maintained)
+- **Change Tracking**: All modifications logged in player_audit table
+- **Card Layout**: Beautiful card-based display of all players
+
+### 2. Create Tournament
 - Auto-generates next week name
-- Add 3+ players with photos and team names
+- Select 3+ existing players from dropdown
+- Cannot select same player twice (dynamically excluded)
 - Select matches per player (auto-calculated based on player count)
 - Validates minimum 3 players
 
-### 2. Player Registration
-- Player name, team name, photo URL
-- Photos stored via Netlify DB
+### 3. Player Registration
+- Players created independently on Players page
+- Account number required for identification
+- Photos stored as base64 in database
 - Auto-assigned unique player ID
+- Reusable across multiple tournaments
 
-### 3. Matches Per Player Logic
+### 4. Matches Per Player Logic
 For `n` players:
 - Possible pairs = `n * (n-1) / 2`
 - Each pair plays: 2, 4, 6, 8, 10, 12... times
@@ -161,45 +191,94 @@ Example (3 players):
 Example (4 players):
 - Pairs = 6, so options: 12, 24 matches
 
-### 4. Fixture Generation
+### 5. Fixture Generation
 - Creates bidirectional matches (A vs B and B vs A)
 - All matches initially `scheduled`
+- Uses existing player IDs from database
 - Total matches = pairs × matches_per_pair × 2
 
-### 5. Match Submission
+### 6. Match Submission
 - Select two players
 - Input goals for each
 - System auto-calculates:
   - Winner/draw
   - Points (3 for win, 1 for draw, 0 for loss)
-  - Updates leaderboard
+  - Updates leaderboard with player_id reference
 
-### 6. Tournament Auto-Completion
-- When all matches are completed
-- Marks tournament as `completed`
-- Records tournament winner
+### 7. Tournament Completion
+- End League button marks tournament as finished
+- All matches set to `ENDED` status
+- Tournament completion recorded
+- Results viewable in Past Tournaments
 
-### 7. Leaderboards
+### 8. Leaderboards
 - **Tournament Leaderboard**: Ranked by points, goal difference
 - **All-Time Leaderboard**: Aggregates across all tournaments
+- **Player Stats**: Tracked by player_id for consistency across tournaments
 
 ## API Endpoints
 
 ### POST /netlify/functions/create-tournament
-Creates a new tournament with players.
+Creates a new tournament with existing players.
 
 Request:
 ```json
 {
-  "players": [
-    {
-      "id": "player_1",
-      "name": "John Doe",
-      "teamName": "Team A",
-      "photoUrl": "https://..."
-    }
-  ],
+  "playerIds": ["player_1", "player_2", "player_3"],
   "matchesPerPlayer": 12
+}
+```
+
+### GET /netlify/functions/get-players
+Fetch all players from database.
+
+Returns:
+```json
+[
+  {
+    "id": "player_1",
+    "name": "John Doe",
+    "team_name": "Team A",
+    "account_number": "ACC123",
+    "photo_url": "data:image/jpeg;base64,..."
+  }
+]
+```
+
+### POST /netlify/functions/add-player
+Create a new player.
+
+Request:
+```json
+{
+  "name": "John Doe",
+  "teamName": "Team A",
+  "accountNumber": "ACC123",
+  "photoUrl": "data:image/jpeg;base64,..."
+}
+```
+
+### POST /netlify/functions/update-player
+Update player details.
+
+Request:
+```json
+{
+  "playerId": "player_1",
+  "name": "John Doe",
+  "teamName": "Team A",
+  "accountNumber": "ACC123",
+  "photoUrl": "data:image/jpeg;base64,..."
+}
+```
+
+### POST /netlify/functions/delete-player
+Delete a player (audit trail maintained).
+
+Request:
+```json
+{
+  "playerId": "player_1"
 }
 ```
 
@@ -271,17 +350,29 @@ Request:
 ### CSS Variables
 All colors defined in `:root` for easy customization.
 
+## Recent Updates (Players Feature)
+
+- ✅ Centralized player database
+- ✅ Account number integration
+- ✅ Player CRUD operations with audit trail
+- ✅ Tournament creation with existing players
+- ✅ Dynamic player dropdown exclusion
+- ✅ Players management page
+- ✅ Full change tracking and audit logs
+
 ## Future Enhancements
 
-- [ ] Player photo upload to Netlify Blob storage
+- [ ] Player search and filter
+- [ ] Bulk import players from CSV
 - [ ] Edit/delete match results
-- [ ] Delete players (cascade delete unpublished fixtures)
+- [ ] Player availability/status tracking
 - [ ] Mobile hamburger menu navigation
-- [ ] Search and filter leaderboards
+- [ ] Advanced leaderboard filters
 - [ ] Export tournament results
 - [ ] Admin authentication
 - [ ] Real-time match notifications
 - [ ] Team-based leaderboards
+- [ ] Player photo upload to cloud storage
 
 ## Troubleshooting
 
