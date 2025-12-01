@@ -162,7 +162,9 @@ class PlayerManager {
                  form.style.display = 'none';
                  toggle.classList.remove('open');
                  // Invalidate player cache
-                 localStorage.removeItem('tournament_players_cache');
+                 if (typeof cache !== 'undefined') {
+                   cache.invalidate('cache_tournament_players');
+                 }
                  await this.loadPlayers();
              } else {
                  Utils.showNotification('Error: ' + (result.error || 'Failed to add player'), 'error');
@@ -231,7 +233,9 @@ class PlayerManager {
                 // Reset form for next use
                 document.getElementById('editPlayerForm').reset();
                 // Invalidate player cache
-                localStorage.removeItem('tournament_players_cache');
+                if (typeof cache !== 'undefined') {
+                  cache.invalidate('cache_tournament_players');
+                }
                 await this.loadPlayers();
             } else {
                 Utils.showNotification('Error: ' + (result.error || 'Failed to update player'), 'error');
@@ -261,7 +265,9 @@ class PlayerManager {
                 Utils.showNotification('Player deleted successfully!', 'success');
                 document.getElementById('editPlayerModal').style.display = 'none';
                 // Invalidate player cache
-                localStorage.removeItem('tournament_players_cache');
+                if (typeof cache !== 'undefined') {
+                  cache.invalidate('cache_tournament_players');
+                }
                 await this.loadPlayers();
             } else {
                 Utils.showNotification('Error: ' + (result.error || 'Failed to delete player'), 'error');

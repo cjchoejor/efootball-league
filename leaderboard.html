@@ -54,28 +54,44 @@
         </div>
     </main>
 
+    <script src="src/js/cache.js"></script>
     <script src="src/js/utils.js"></script>
     <script>
         class Leaderboard {
-            constructor() {
-                this.init();
-            }
+             constructor() {
+                 this.baseUrl = '/.netlify/functions';
+                 this.cacheKey = 'cache_all_time_leaderboard_full';
+                 this.cacheTTL = 5 * 60 * 1000; // 5 minutes
+                 this.init();
+             }
 
-            async init() {
-                await this.loadLeaderboard();
-            }
+             async init() {
+                 await this.loadLeaderboard();
+             }
 
-            async loadLeaderboard() {
-                try {
-                    const response = await fetch('/.netlify/functions/get-stats?type=all-time');
-                    const stats = await response.json();
-                    this.renderLeaderboard(stats);
-                } catch (error) {
-                    console.error('Error loading leaderboard:', error);
-                    document.getElementById('leaderboardBody').innerHTML = 
-                        '<p class="error">Error loading leaderboard</p>';
-                }
-            }
+             async loadLeaderboard() {
+                 try {
+                     // Check cache first
+                     const cached = cache.get(this.cacheKey);
+                     if (cached) {
+                         console.log('Using cached leaderboard data');
+                         this.renderLeaderboard(cached);
+                         return;
+                     }
+
+                     const response = await fetch(`${this.baseUrl}/get-stats?type=all-time`);
+                     const stats = await response.json();
+                     
+                     // Cache the result
+                     cache.set(this.cacheKey, stats, this.cacheTTL);
+                     
+                     this.renderLeaderboard(stats);
+                 } catch (error) {
+                     console.error('Error loading leaderboard:', error);
+                     document.getElementById('leaderboardBody').innerHTML = 
+                         '<p class="error">Error loading leaderboard</p>';
+                 }
+             }
 
             renderLeaderboard(stats) {
                 const container = document.getElementById('leaderboardBody');

@@ -1,44 +1,68 @@
 class FootballLeague {
-    constructor() {
-        this.baseUrl = '/.netlify/functions';
-        this.init();
-    }
+     constructor() {
+         this.baseUrl = '/.netlify/functions';
+         this.cacheKeys = {
+             ongoing: 'cache_ongoing_tournament',
+             pastTournaments: 'cache_past_tournaments',
+             leaderboard: 'cache_all_time_leaderboard'
+         };
+         this.init();
+     }
 
-    async init() {
-        await this.loadHomePageData();
-        this.setupEventListeners();
-    }
+     async init() {
+         await this.loadHomePageData();
+         this.setupEventListeners();
+     }
 
-    async loadHomePageData() {
-        try {
-            // Load ongoing tournament
-            const ongoingResponse = await fetch(`${this.baseUrl}/get-tournaments?status=ongoing`);
-            let ongoingData = await ongoingResponse.json();
-            if (ongoingData && ongoingData.body && typeof ongoingData.body === 'string') {
-                ongoingData = JSON.parse(ongoingData.body);
-            }
-            this.renderOngoingTournament(ongoingData[0]);
+     async loadHomePageData() {
+         try {
+             // Load ongoing tournament
+             const ongoingData = await this.fetchWithCache(
+                 `${this.baseUrl}/get-tournaments?status=ongoing`,
+                 this.cacheKeys.ongoing
+             );
+             this.renderOngoingTournament(Array.isArray(ongoingData) ? ongoingData[0] : ongoingData);
 
-            // Load recent tournaments (finished status)
-            const pastResponse = await fetch(`${this.baseUrl}/get-tournaments?status=finished&limit=3`);
-            let pastData = await pastResponse.json();
-            if (pastData && pastData.body && typeof pastData.body === 'string') {
-                pastData = JSON.parse(pastData.body);
-            }
-            this.renderPastTournamentsPreview(pastData);
+             // Load recent tournaments (finished status)
+             const pastData = await this.fetchWithCache(
+                 `${this.baseUrl}/get-tournaments?status=finished&limit=3`,
+                 this.cacheKeys.pastTournaments
+             );
+             this.renderPastTournamentsPreview(Array.isArray(pastData) ? pastData : pastData);
 
-            // Load leaderboard preview
-            const leaderboardResponse = await fetch(`${this.baseUrl}/get-stats?type=all-time&limit=5`);
-            let leaderboardData = await leaderboardResponse.json();
-            if (leaderboardData && leaderboardData.body && typeof leaderboardData.body === 'string') {
-                leaderboardData = JSON.parse(leaderboardData.body);
-            }
-            this.renderLeaderboardPreview(leaderboardData);
+             // Load leaderboard preview
+             const leaderboardData = await this.fetchWithCache(
+                 `${this.baseUrl}/get-stats?type=all-time&limit=5`,
+                 this.cacheKeys.leaderboard
+             );
+             this.renderLeaderboardPreview(Array.isArray(leaderboardData) ? leaderboardData : leaderboardData);
 
-        } catch (error) {
-            console.error('Error loading home page data:', error);
-        }
-    }
+         } catch (error) {
+             console.error('Error loading home page data:', error);
+         }
+     }
+
+     async fetchWithCache(url, cacheKey, ttl = 5 * 60 * 1000) {
+         // Check cache first
+         const cached = cache.get(cacheKey);
+         if (cached) {
+             console.log(`Using cached data for ${cacheKey}`);
+             return cached;
+         }
+
+         // Fetch from API
+         const response = await fetch(url);
+         let data = await response.json();
+         
+         // Handle nested body property
+         if (data && data.body && typeof data.body === 'string') {
+             data = JSON.parse(data.body);
+         }
+
+         // Cache the result
+         cache.set(cacheKey, data, ttl);
+         return data;
+     }
 
     renderOngoingTournament(tournament) {
         const container = document.getElementById('ongoingTournament');
