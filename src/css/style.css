@@ -852,6 +852,9 @@ body {
    border-radius: var(--border-radius);
    border-left: 3px solid var(--accent-blue);
    margin-bottom: 1rem;
+}
+
+.form-row-player {
    display: flex;
    align-items: flex-end;
    gap: 1rem;
@@ -862,9 +865,33 @@ body {
    margin-bottom: 0;
 }
 
-.player-selection .btn-remove {
+.player-selection .player-dropdown {
+   cursor: pointer;
+}
+
+.btn-remove-player {
+   background: #ff6666;
+   color: white;
+   border: none;
    padding: 0.75rem 1rem;
+   border-radius: var(--border-radius);
+   cursor: pointer;
    font-size: 0.9rem;
+   font-weight: 500;
+   transition: background 0.3s ease, transform 0.2s ease;
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+   white-space: nowrap;
+}
+
+.btn-remove-player:hover {
+   background: #ff3333;
+   transform: translateY(-2px);
+}
+
+.btn-remove-player i {
+   font-size: 1rem;
 }
 
 /* Players Management Styles */

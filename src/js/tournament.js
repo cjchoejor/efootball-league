@@ -90,46 +90,72 @@ class TournamentManager {
     }
   }
 
-  getAvailablePlayersForDropdown(excludeIndices = []) {
-    // Filter out already selected players
-    const selectedIds = this.selectedPlayers.map(p => p.id);
-    return this.allAvailablePlayers.filter(
-      p => !selectedIds.includes(p.id)
-    );
+  getAvailablePlayersForIndex(currentIndex) {
+    // Get all player IDs that are selected in OTHER dropdowns (not this one)
+    const selectedIds = this.selectedPlayers
+      .map((p, idx) => idx !== currentIndex && p && p.id ? p.id : null)
+      .filter(Boolean);
+    
+    // Return all players that are NOT selected elsewhere
+    return this.allAvailablePlayers.filter(p => !selectedIds.includes(p.id));
   }
 
   addPlayerDropdown() {
     const container = document.getElementById("playersContainer");
     const playerIndex = this.selectedPlayers.length;
-    const availablePlayers = this.getAvailablePlayersForDropdown();
+    const availablePlayers = this.getAvailablePlayersForIndex(playerIndex);
 
     const playerHtml = `
             <div class="player-selection" data-index="${playerIndex}">
-                <div class="form-group">
-                    <label class="form-label">Player ${playerIndex + 1}</label>
-                    <select class="form-input player-dropdown" data-index="${playerIndex}" required onchange="tournamentManager.handlePlayerChange(${playerIndex})">
-                        <option value="">Select a player...</option>
-                        ${availablePlayers.map(p => `
-                            <option value="${p.id}" data-name="${p.name}" data-team="${p.team_name}" data-photo="${p.photo_url}">
-                                ${p.name} (${p.team_name})
-                            </option>
-                        `).join('')}
-                    </select>
+                <div class="form-row-player">
+                    <div class="form-group">
+                        <label class="form-label">Player ${playerIndex + 1}</label>
+                        <select class="form-input player-dropdown" data-index="${playerIndex}" required>
+                            <option value="">Select a player...</option>
+                            ${availablePlayers.map(p => `
+                                <option value="${p.id}" data-name="${p.name}" data-team="${p.team_name}" data-photo="${p.photo_url}">
+                                    ${p.name} (${p.team_name})
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    ${playerIndex > 0 ? `
+                        <button type="button" class="btn-remove-player" data-index="${playerIndex}" style="margin-top: 1.5rem;">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    ` : ''}
                 </div>
-                ${playerIndex > 0 ? `
-                    <button type="button" class="btn-remove" onclick="tournamentManager.removePlayerDropdown(${playerIndex})" style="margin-top: 1.5rem;">
-                        <i class="fas fa-times"></i> Remove
-                    </button>
-                ` : ''}
             </div>
         `;
 
     container.insertAdjacentHTML("beforeend", playerHtml);
+    
+    // Add event listener to the newly created dropdown
+    const newDropdown = container.querySelector(`[data-index="${playerIndex}"].player-dropdown`);
+    if (newDropdown) {
+      newDropdown.addEventListener('change', (e) => {
+        this.handlePlayerChange(playerIndex);
+      });
+    }
+
+    // Add event listener to remove button if exists
+    const removeBtn = container.querySelector(`.btn-remove-player[data-index="${playerIndex}"]`);
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.removePlayerDropdown(playerIndex);
+      });
+    }
+
     this.updateMatchesOptions();
   }
 
   handlePlayerChange(index) {
-    const select = document.querySelector(`[data-index="${index}"].player-dropdown`);
+    const container = document.getElementById("playersContainer");
+    const select = container.querySelector(`[data-index="${index}"].player-dropdown`);
+    
+    if (!select) return;
+
     const selectedValue = select.value;
 
     if (selectedValue) {
@@ -142,29 +168,33 @@ class TournamentManager {
       };
 
       // Update or add player in selectedPlayers array
-      if (this.selectedPlayers[index]) {
-        this.selectedPlayers[index] = player;
-      } else {
-        this.selectedPlayers[index] = player;
-      }
+      this.selectedPlayers[index] = player;
 
       // Refresh all dropdowns to exclude newly selected players
       this.refreshAllPlayerDropdowns();
     }
+    
+    this.updateMatchesOptions();
   }
 
   refreshAllPlayerDropdowns() {
-    const dropdowns = document.querySelectorAll('.player-dropdown');
-    dropdowns.forEach((dropdown, index) => {
+    const container = document.getElementById("playersContainer");
+    const dropdowns = container.querySelectorAll('.player-dropdown');
+    
+    dropdowns.forEach((dropdown) => {
+      const index = parseInt(dropdown.getAttribute('data-index'));
       const currentValue = dropdown.value;
-      const selectedIds = this.selectedPlayers.map((p, i) => i !== index ? p.id : null).filter(Boolean);
+      
+      // Get IDs selected in OTHER dropdowns
+      const selectedIds = this.selectedPlayers
+        .map((p, idx) => idx !== index && p && p.id ? p.id : null)
+        .filter(Boolean);
 
-      // Build new options
-      const newOptions = [
-        '<option value="">Select a player...</option>'
-      ];
+      // Build new options - include currently selected even if it would be excluded
+      const newOptions = ['<option value="">Select a player...</option>'];
 
       this.allAvailablePlayers.forEach(player => {
+        // Show player if: not selected elsewhere OR it's the currently selected one
         if (!selectedIds.includes(player.id) || player.id === currentValue) {
           newOptions.push(`
             <option value="${player.id}" data-name="${player.name}" data-team="${player.team_name}" data-photo="${player.photo_url}">
@@ -182,13 +212,17 @@ class TournamentManager {
   }
 
   removePlayerDropdown(index) {
-    const form = document.querySelector(`[data-index="${index}"]`);
+    const container = document.getElementById("playersContainer");
+    const form = container.querySelector(`[data-index="${index}"].player-selection`);
+    
     if (form) {
       form.remove();
       // Remove from selectedPlayers
       this.selectedPlayers.splice(index, 1);
-      // Re-index all dropdowns
+      // Re-index all remaining dropdowns
       this.reindexPlayerDropdowns();
+      // Refresh to show previously hidden players
+      this.refreshAllPlayerDropdowns();
       this.updateMatchesOptions();
     }
   }
@@ -196,18 +230,29 @@ class TournamentManager {
   reindexPlayerDropdowns() {
     const container = document.getElementById("playersContainer");
     const forms = container.querySelectorAll('.player-selection');
-    forms.forEach((form, index) => {
-      form.setAttribute('data-index', index);
+    
+    forms.forEach((form, newIndex) => {
+      // Update the player number label
+      const label = form.querySelector('.form-label');
+      if (label) {
+        label.textContent = `Player ${newIndex + 1}`;
+      }
+      
+      // Update dropdown data-index
       const dropdown = form.querySelector('.player-dropdown');
       if (dropdown) {
-        dropdown.setAttribute('data-index', index);
-        dropdown.setAttribute('onchange', `tournamentManager.handlePlayerChange(${index})`);
+        dropdown.setAttribute('data-index', newIndex);
       }
-      const removeBtn = form.querySelector('.btn-remove');
+      
+      // Update form data-index
+      form.setAttribute('data-index', newIndex);
+      
+      // Update remove button
+      const removeBtn = form.querySelector('.btn-remove-player');
       if (removeBtn) {
-        removeBtn.setAttribute('onclick', `tournamentManager.removePlayerDropdown(${index})`);
+        removeBtn.setAttribute('data-index', newIndex);
         // Hide remove button for first player
-        removeBtn.style.display = index > 0 ? 'block' : 'none';
+        removeBtn.style.display = newIndex > 0 ? 'block' : 'none';
       }
     });
   }
